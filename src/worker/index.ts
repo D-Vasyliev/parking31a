@@ -10,6 +10,8 @@ import { searchRouter } from "./routes/search";
 import { usersRouter } from "./routes/users";
 import { auditRouter } from "./routes/audit";
 import { runBackup, cleanupExpired } from "./cron";
+import { createDb } from "./db";
+import { writeAudit } from "./lib/audit";
 
 const app = new Hono<AppContext>();
 
@@ -32,6 +34,14 @@ app.route("/api/audit", auditRouter);
 app.post("/api/backup", requireAuth, requireAdmin, async (c) => {
   const date = new Date().toISOString().slice(0, 10);
   const res = await runBackup(c.env, date);
+  await writeAudit(createDb(c.env.DB), {
+    userId: c.get("user")!.id,
+    action: "backup.run",
+    entityType: "backup",
+    entityId: res.key,
+    payload: { bytes: res.bytes, rows: res.rows },
+    ip: c.req.header("CF-Connecting-IP") ?? null,
+  });
   return c.json({ ok: true, ...res });
 });
 
@@ -73,11 +83,16 @@ export default {
     ctx.waitUntil(
       (async () => {
         const now = new Date();
+        // Бекап — пріоритет durability; виконуємо першим і окремо від очистки.
         try {
-          await cleanupExpired(env, now.toISOString());
           await runBackup(env, now.toISOString().slice(0, 10));
         } catch (err) {
           console.error("scheduled backup failed:", err);
+        }
+        try {
+          await cleanupExpired(env, now.toISOString());
+        } catch (err) {
+          console.error("scheduled cleanup failed:", err);
         }
       })(),
     );

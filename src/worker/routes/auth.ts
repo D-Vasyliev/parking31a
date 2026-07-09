@@ -347,6 +347,9 @@ authRouter.post("/2fa/confirm", requireAuth, async (c) => {
   await db.update(users).set({ totpSecret: enc, totpEnabled: 1, lastTotpStep: v.step }).where(eq(users.id, uid));
   await db.delete(recoveryCodes).where(eq(recoveryCodes.userId, uid));
   await db.insert(recoveryCodes).values(hashes.map((codeHash) => ({ userId: uid, codeHash })));
+  await destroyAllSessions(db, uid); // скидання 2ФА → вийти всюди (SPEC §3.4)
+  const { cookie } = await createSession(db, uid, ip, meta(c).ua); // поточний пристрій лишаємо
+  c.header("Set-Cookie", cookie);
   await writeAudit(db, { userId: uid, action: "user.2fa_reset", entityType: "user", entityId: String(uid), ip });
   return c.json({ backupCodes: codes.map(formatBackupCode), user: toSessionUser(u) } satisfies EnrollConfirmResult);
 });

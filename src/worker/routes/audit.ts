@@ -15,7 +15,7 @@ auditRouter.get("/", async (c) => {
   const action = c.req.query("action");
   const from = c.req.query("from");
   const to = c.req.query("to");
-  const limit = Math.min(Number(c.req.query("limit")) || 100, 500);
+  const limit = Math.max(1, Math.min(Number(c.req.query("limit")) || 100, 500));
   const offset = Math.max(0, Number(c.req.query("offset")) || 0);
 
   const conds = [];

@@ -1186,4 +1186,21 @@ h1 {
     border: 1px solid var(--accent);
     border-radius: 8px;
   }
+  /* цілі дотику ≥40px (§5.9) */
+  .btn,
+  .btn-sm,
+  .tab,
+  .icon-btn {
+    min-height: 40px;
+  }
+  .bottom-nav a {
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .table td .btn-link {
+    display: inline-block;
+    padding: 8px 4px;
+  }
 }

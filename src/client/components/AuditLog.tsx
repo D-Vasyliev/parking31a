@@ -15,6 +15,8 @@ const ACTIONS = [
   "spot.owner_change",
   "user.create",
   "user.reset",
+  "user.disable",
+  "backup.run",
 ];
 
 export function AuditLog() {
@@ -80,7 +82,9 @@ export function AuditLog() {
                 <td>{r.userEmail ?? "—"}</td>
                 <td>{r.action}</td>
                 <td>{r.entityType ? `${r.entityType} ${r.entityId ?? ""}` : "—"}</td>
-                <td className="audit-payload">{r.payload ?? ""}</td>
+                <td className="audit-payload" title={r.payload ?? ""}>
+                  {r.payload ?? ""}
+                </td>
               </tr>
             ))}
             {rows.length === 0 ? (

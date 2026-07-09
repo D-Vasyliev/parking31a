@@ -312,6 +312,7 @@ export interface ChangePasswordBody {
 export interface Reenroll2faConfirmBody {
   password: string;
   code: string;
+  secret: string;
 }
 export interface BackupCodesBody {
   password: string;

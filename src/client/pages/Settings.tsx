@@ -127,14 +127,18 @@ function UsersTab({ selfId }: { selfId: number }) {
                 <td>{u.totpEnabled ? "✓" : "—"}</td>
                 <td>{u.isActive ? "Активний" : "Деактивований"}</td>
                 <td className="num">
-                  <button className="btn-link" onClick={() => reset(u.id)}>
-                    Скинути пароль
-                  </button>
                   {u.id !== selfId ? (
-                    <button className="btn-link" onClick={() => setActive(u.id, !u.isActive)}>
-                      {u.isActive ? "Деактивувати" : "Активувати"}
-                    </button>
-                  ) : null}
+                    <>
+                      <button className="btn-link" onClick={() => reset(u.id)}>
+                        Скинути пароль
+                      </button>
+                      <button className="btn-link" onClick={() => setActive(u.id, !u.isActive)}>
+                        {u.isActive ? "Деактивувати" : "Активувати"}
+                      </button>
+                    </>
+                  ) : (
+                    <span className="muted-line">свій акаунт — у «Безпека»</span>
+                  )}
                 </td>
               </tr>
             ))}

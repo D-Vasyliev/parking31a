@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, asc, eq, ne, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { AppContext } from "../env";
 import { createDb } from "../db";
@@ -29,9 +29,9 @@ usersRouter.get("/", async (c) => {
 usersRouter.post("/", async (c) => {
   let email = "";
   try {
-    const p = z.object({ email: z.string().min(3).max(320) }).safeParse(await c.req.json());
-    if (!p.success) return c.json({ error: { code: "bad_request", message: "Вкажіть email" } }, 400);
-    email = p.data.email.trim();
+    const p = z.object({ email: z.string().max(320).regex(/^[^@\s]+@[^@\s]+\.[^@\s]+$/) }).safeParse(await c.req.json());
+    if (!p.success) return c.json({ error: { code: "bad_request", message: "Вкажіть коректний email" } }, 400);
+    email = p.data.email.trim().toLowerCase();
   } catch {
     return c.json({ error: { code: "bad_request", message: "Вкажіть email" } }, 400);
   }
@@ -79,12 +79,18 @@ usersRouter.post("/:id/active", async (c) => {
   if (!active && id === c.get("user")!.id) return c.json({ error: { code: "self", message: "Не можна деактивувати себе" } }, 409);
   const u = (await db.select().from(users).where(eq(users.id, id)).limit(1))[0];
   if (!u) return c.json({ error: { code: "not_found", message: "Користувача не знайдено" } }, 404);
-  if (!active) {
-    const others = (await db.select({ n: sql<number>`count(*)` }).from(users).where(and(eq(users.isActive, 1), eq(users.role, "admin"), ne(users.id, id))))[0]?.n ?? 0;
-    if (Number(others) < 1) return c.json({ error: { code: "last_admin", message: "Не можна деактивувати останнього активного адміністратора" } }, 409);
+  if (active) {
+    await db.update(users).set({ isActive: 1 }).where(eq(users.id, id));
+  } else {
+    // Атомарний гвард останнього активного адміна (проти гонки взаємної деактивації).
+    const upd = await db
+      .update(users)
+      .set({ isActive: 0 })
+      .where(and(eq(users.id, id), sql`(SELECT count(*) FROM users WHERE is_active = 1 AND role = 'admin' AND id <> ${id}) >= 1`))
+      .returning({ id: users.id });
+    if (!upd.length) return c.json({ error: { code: "last_admin", message: "Не можна деактивувати останнього активного адміністратора" } }, 409);
+    await destroyAllSessions(db, id);
   }
-  await db.update(users).set({ isActive: active ? 1 : 0 }).where(eq(users.id, id));
-  if (!active) await destroyAllSessions(db, id);
   await writeAudit(db, { userId: c.get("user")!.id, action: active ? "user.update" : "user.disable", entityType: "user", entityId: String(id), payload: { active }, ip: ip(c) });
   return c.json({ ok: true });
 });
