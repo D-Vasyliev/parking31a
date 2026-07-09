@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
+import { GlobalSearch } from "./GlobalSearch";
 
 export function AppLayout() {
   const { user, logout } = useAuth();
@@ -34,6 +35,7 @@ export function AppLayout() {
           <span className="eyebrow">Паркінг Правди 31</span>
           <strong>Керування</strong>
         </div>
+        <GlobalSearch />
         <nav className="app-nav">
           <NavLink to="/" end className={navClass}>
             Мапа

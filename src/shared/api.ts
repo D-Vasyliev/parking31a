@@ -75,6 +75,8 @@ export interface SpotSummary {
   sheet: number;
   occupied: boolean;
   ownerName: string | null;
+  ownerPhone: string | null;
+  plate: string | null;
   hasDebt: boolean;
 }
 
@@ -242,3 +244,26 @@ export interface CancelPaymentBody {
   reason: string;
 }
 export type ProjectTransition = "activate" | "complete" | "uncomplete" | "to_draft" | "cancel" | "archive" | "unarchive";
+
+// ─── Пошук (етап 5) ───
+export interface SearchSpot {
+  number: number;
+  section: Section;
+  ownerName: string | null;
+  plate: string | null;
+}
+export interface SearchOwner {
+  id: number;
+  fullName: string;
+  phone: string | null;
+}
+export interface SearchProject {
+  id: number;
+  title: string;
+  status: ProjectStatus;
+}
+export interface SearchResults {
+  spots: SearchSpot[];
+  owners: SearchOwner[];
+  projects: SearchProject[];
+}

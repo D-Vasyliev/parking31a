@@ -115,7 +115,7 @@ spotsRouter.use("*", requireAuth);
 spotsRouter.get("/", async (c) => {
   const db = createDb(c.env.DB);
   const rows = await db
-    .select({ number: spots.number, section: spots.section, sheet: spots.sheet, ownerName: owners.fullName, primary: spotOwners.isPrimary })
+    .select({ number: spots.number, section: spots.section, sheet: spots.sheet, plate: spots.plate, ownerName: owners.fullName, ownerPhone: owners.phone, primary: spotOwners.isPrimary })
     .from(spots)
     .leftJoin(spotOwners, and(eq(spotOwners.spotId, spots.id), isNull(spotOwners.endedAt)))
     .leftJoin(owners, eq(owners.id, spotOwners.ownerId))
@@ -135,13 +135,18 @@ spotsRouter.get("/", async (c) => {
   for (const r of rows) {
     let s = map.get(r.number);
     if (!s) {
-      s = { number: Number(r.number), section: r.section as Section, sheet: r.sheet, occupied: false, ownerName: null, hasDebt: debt.has(r.number) };
+      s = { number: Number(r.number), section: r.section as Section, sheet: r.sheet, plate: r.plate, occupied: false, ownerName: null, ownerPhone: null, hasDebt: debt.has(r.number) };
       map.set(r.number, s);
     }
     if (r.ownerName) {
       s.occupied = true;
-      if (r.primary === 1) s.ownerName = r.ownerName;
-      else if (!s.ownerName) s.ownerName = r.ownerName;
+      if (r.primary === 1) {
+        s.ownerName = r.ownerName;
+        s.ownerPhone = r.ownerPhone;
+      } else if (!s.ownerName) {
+        s.ownerName = r.ownerName;
+        s.ownerPhone = r.ownerPhone;
+      }
     }
   }
   return c.json([...map.values()]);

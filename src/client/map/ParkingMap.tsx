@@ -7,14 +7,17 @@ interface Props {
   occupancy: Map<number, SpotSummary>;
   selected: number | null;
   highlight: number | null;
-  onSelect: (n: number) => void;
+  onSelect: (n: number, toggle: boolean) => void;
+  // мультивибір (view-режим)
+  multi?: Set<number>;
+  selectMode?: boolean;
   // режим вибору (map-picker)
   picker?: boolean;
   chosen?: Set<number>;
   locked?: Set<number>;
 }
 
-export function ParkingMap({ level, occupancy, selected, highlight, onSelect, picker, chosen, locked }: Props) {
+export function ParkingMap({ level, occupancy, selected, highlight, onSelect, multi, selectMode, picker, chosen, locked }: Props) {
   const lay = useMemo(() => layout(level), [level]);
   const targetN = highlight ?? selected;
   const targetRef = useRef<SVGGElement>(null);
@@ -39,9 +42,12 @@ export function ParkingMap({ level, occupancy, selected, highlight, onSelect, pi
           const occ = occupancy.get(s.n);
           const isLocked = picker && locked?.has(s.n);
           const isChosen = picker && chosen?.has(s.n);
+          const isMulti = !picker && multi?.has(s.n);
           const cls = picker
             ? ["pm-stall", isChosen ? "occupied" : "free", isLocked ? "locked" : ""].filter(Boolean).join(" ")
-            : ["pm-stall", occ?.occupied ? "occupied" : "free", selected === s.n ? "selected" : "", highlight === s.n ? "found" : ""].filter(Boolean).join(" ");
+            : ["pm-stall", occ?.occupied ? "occupied" : "free", isMulti ? "multi" : "", selected === s.n ? "selected" : "", highlight === s.n ? "found" : ""]
+                .filter(Boolean)
+                .join(" ");
           const title = picker ? `№${s.n}${isLocked ? " · сплачено" : ""}` : occ?.occupied ? `№${s.n} · ${occ.ownerName ?? ""}` : `№${s.n} · вільне`;
           const clickable = !isLocked;
           return (
@@ -53,12 +59,12 @@ export function ParkingMap({ level, occupancy, selected, highlight, onSelect, pi
               tabIndex={clickable ? 0 : -1}
               role="button"
               aria-label={title}
-              aria-pressed={picker ? !!isChosen : undefined}
-              onClick={clickable ? () => onSelect(s.n) : undefined}
+              aria-pressed={picker ? !!isChosen : isMulti ? true : undefined}
+              onClick={clickable ? (e) => onSelect(s.n, picker ? true : !!(e.ctrlKey || e.metaKey || selectMode)) : undefined}
               onKeyDown={(e) => {
                 if (clickable && (e.key === "Enter" || e.key === " ")) {
                   e.preventDefault();
-                  onSelect(s.n);
+                  onSelect(s.n, picker ? true : !!(e.ctrlKey || e.metaKey || selectMode));
                 }
               }}
             >
@@ -68,7 +74,11 @@ export function ParkingMap({ level, occupancy, selected, highlight, onSelect, pi
                 {s.n}
               </text>
               {!picker && occ?.hasDebt ? <circle className="pm-debt" cx={s.w - 7} cy={7} r={4} /> : null}
-              {isLocked ? <text className="pm-lock" x={s.w - 8} y={12}>🔒</text> : null}
+              {isLocked ? (
+                <text className="pm-lock" x={s.w - 8} y={12}>
+                  🔒
+                </text>
+              ) : null}
             </g>
           );
         })}

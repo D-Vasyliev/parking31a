@@ -936,3 +936,119 @@ h1 {
   opacity: 0.75;
   cursor: not-allowed;
 }
+.pm-stall.multi rect {
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-dasharray: 4 3;
+}
+
+/* ── global search ── */
+.gsearch {
+  position: relative;
+  flex: 1;
+  max-width: 420px;
+}
+.app-nav {
+  flex: 0 0 auto;
+}
+.gsearch-input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--field-bg);
+  color: var(--ink);
+  border-radius: 9px;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 13.5px;
+}
+.gsearch-drop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(8, 16, 24, 0.2);
+  z-index: 60;
+  max-height: 62vh;
+  overflow: auto;
+  padding: 6px;
+}
+.gs-group + .gs-group {
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
+  padding-top: 4px;
+}
+.gs-head {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  padding: 6px 8px 2px;
+}
+.gs-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13.5px;
+  padding: 7px 8px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.gs-item:hover {
+  background: var(--field-bg);
+}
+.gs-item b {
+  color: var(--accent);
+}
+.gs-empty {
+  padding: 10px 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ── selection panel ── */
+.sel-actions {
+  margin: 14px 0 6px;
+}
+.sel-op {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.sel-op select {
+  flex: 1;
+  border: 1px solid var(--line);
+  background: var(--field-bg);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 13.5px;
+}
+.sel-msg {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--ok);
+}
+.pm-debt-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--err);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+@media (max-width: 720px) {
+  .gsearch {
+    order: 5;
+    flex-basis: 100%;
+    max-width: none;
+  }
+}

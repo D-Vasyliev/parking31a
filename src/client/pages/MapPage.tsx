@@ -4,6 +4,7 @@ import { apiGet } from "../api";
 import { ParkingMap } from "../map/ParkingMap";
 import { LEVEL_META, type LevelKey } from "../map/geometry";
 import { SpotCard } from "../components/SpotCard";
+import { SelectionPanel } from "../components/SelectionPanel";
 import type { SpotSummary, ProjectListItem } from "../../shared/api";
 
 export function MapPage() {
@@ -13,8 +14,9 @@ export function MapPage() {
   const [level, setLevel] = useState<LevelKey>("AB");
   const [search, setSearch] = useState("");
   const [highlight, setHighlight] = useState<number | null>(null);
-
   const [activeProjects, setActiveProjects] = useState(0);
+  const [selection, setSelection] = useState<Set<number>>(new Set());
+  const [selectMode, setSelectMode] = useState(false);
 
   async function load() {
     const r = await apiGet<SpotSummary[]>("/api/spots");
@@ -47,8 +49,34 @@ export function MapPage() {
     return () => clearTimeout(t);
   }, [highlight]);
 
+  // Esc знімає мультивибір
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelection(new Set());
+        setSelectMode(false);
+      }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, []);
+
   const levelSpots = useMemo(() => spots.filter((s) => (level === "AB" ? s.sheet === 1 : s.sheet === 2)), [spots, level]);
   const occupied = levelSpots.filter((s) => s.occupied).length;
+  const selectedSpots = useMemo(() => spots.filter((s) => selection.has(s.number)).sort((a, b) => a.number - b.number), [spots, selection]);
+
+  function handleSelect(n: number, toggle: boolean) {
+    if (toggle) {
+      setSelection((prev) => {
+        const s = new Set(prev);
+        if (s.has(n)) s.delete(n);
+        else s.add(n);
+        return s;
+      });
+    } else {
+      nav(`/spots/${n}`);
+    }
+  }
 
   function doSearch(v: string) {
     setSearch(v);
@@ -80,6 +108,14 @@ export function MapPage() {
           inputMode="numeric"
           aria-label="Пошук місця за номером"
         />
+        <button
+          type="button"
+          className={"btn btn-sm" + (selectMode ? " btn-primary" : "")}
+          onClick={() => setSelectMode((v) => !v)}
+          title="Клацання по місцях перемикає вибір (або Ctrl+клік)"
+        >
+          {selectMode ? "Режим вибору ✓" : "Вибрати"}
+        </button>
         <div className="map-stats">
           <span className="legend-dot free" /> Вільно: <b>{levelSpots.length - occupied}</b>
           <span className="legend-dot occupied" /> Зайнято: <b>{occupied}</b> / {levelSpots.length}
@@ -88,9 +124,20 @@ export function MapPage() {
         </div>
       </div>
 
-      <ParkingMap level={level} occupancy={byNumber} selected={selected} highlight={highlight} onSelect={(n) => nav(`/spots/${n}`)} />
+      <ParkingMap level={level} occupancy={byNumber} selected={selected} highlight={highlight} onSelect={handleSelect} multi={selection} selectMode={selectMode} />
 
-      {selected != null ? <SpotCard number={selected} onClose={() => nav("/")} onChanged={load} /> : null}
+      {selection.size > 0 ? (
+        <SelectionPanel
+          spots={selectedSpots}
+          onClear={() => {
+            setSelection(new Set());
+            setSelectMode(false);
+          }}
+          onChanged={load}
+        />
+      ) : selected != null ? (
+        <SpotCard number={selected} onClose={() => nav("/")} onChanged={load} />
+      ) : null}
     </div>
   );
 }
