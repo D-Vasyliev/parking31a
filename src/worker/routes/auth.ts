@@ -308,3 +308,61 @@ authRouter.get("/sessions", requireAuth, async (c) => {
     ),
   );
 });
+
+// ── Безпека акаунта (етап 6) ──
+authRouter.post("/change-password", requireAuth, async (c) => {
+  const body = await json(c, z.object({ currentPassword: z.string().min(1).max(200), newPassword: z.string().min(PASSWORD_MIN_LENGTH).max(200) }));
+  if (!body) return c.json({ error: { code: "weak_password", message: `Пароль мінімум ${PASSWORD_MIN_LENGTH} символів` } }, 400);
+  const db = createDb(c.env.DB);
+  const { ip, ua } = meta(c);
+  const uid = c.get("user")!.id;
+  const u = (await db.select().from(users).where(eq(users.id, uid)).limit(1))[0];
+  if (!u || !(await verifyPassword(body.currentPassword, u.passwordHash))) return c.json({ error: { code: "bad_current", message: "Невірний поточний пароль" } }, 400);
+  await db.update(users).set({ passwordHash: await hashPassword(body.newPassword), mustChangePw: 0 }).where(eq(users.id, uid));
+  await destroyAllSessions(db, uid); // вийти всюди
+  const { cookie } = await createSession(db, uid, ip, ua); // поточний пристрій лишаємо залогіненим
+  c.header("Set-Cookie", cookie);
+  await writeAudit(db, { userId: uid, action: "user.password_change", entityType: "user", entityId: String(uid), ip });
+  return c.json({ ok: true });
+});
+
+// Переналаштування 2ФА: новий секрет round-trip через клієнт (старий діє до підтвердження)
+authRouter.post("/2fa/start", requireAuth, (c) => {
+  const secret = generateSecretBase32();
+  return c.json({ secret, otpauthUri: otpauthUri(secret, c.get("user")!.email) } satisfies EnrollTotpStartResult);
+});
+authRouter.post("/2fa/confirm", requireAuth, async (c) => {
+  const body = await json(c, z.object({ password: z.string().min(1).max(200), code: z.string().min(6).max(8), secret: z.string().min(16).max(64) }));
+  if (!body) return c.json({ error: { code: "bad_request", message: "Некоректні дані" } }, 400);
+  const db = createDb(c.env.DB);
+  const { ip } = meta(c);
+  const uid = c.get("user")!.id;
+  const u = (await db.select().from(users).where(eq(users.id, uid)).limit(1))[0];
+  if (!u || !(await verifyPassword(body.password, u.passwordHash))) return c.json({ error: { code: "bad_current", message: "Невірний пароль" } }, 400);
+  const v = verifyTotp(body.secret, body.code.trim(), null, Date.now());
+  if (!v.ok) return c.json({ error: { code: "bad_code", message: "Невірний код" } }, 400);
+  const codes = generateBackupCodes();
+  const hashes = await Promise.all(codes.map(hashBackupCode));
+  const enc = await encryptSecret(body.secret, c.env.TOTP_ENC_KEY);
+  await db.update(users).set({ totpSecret: enc, totpEnabled: 1, lastTotpStep: v.step }).where(eq(users.id, uid));
+  await db.delete(recoveryCodes).where(eq(recoveryCodes.userId, uid));
+  await db.insert(recoveryCodes).values(hashes.map((codeHash) => ({ userId: uid, codeHash })));
+  await writeAudit(db, { userId: uid, action: "user.2fa_reset", entityType: "user", entityId: String(uid), ip });
+  return c.json({ backupCodes: codes.map(formatBackupCode), user: toSessionUser(u) } satisfies EnrollConfirmResult);
+});
+authRouter.post("/backup-codes", requireAuth, async (c) => {
+  const body = await json(c, z.object({ password: z.string().min(1).max(200) }));
+  if (!body) return c.json({ error: { code: "bad_request", message: "Вкажіть пароль" } }, 400);
+  const db = createDb(c.env.DB);
+  const { ip } = meta(c);
+  const uid = c.get("user")!.id;
+  const u = (await db.select().from(users).where(eq(users.id, uid)).limit(1))[0];
+  if (!u || !(await verifyPassword(body.password, u.passwordHash))) return c.json({ error: { code: "bad_current", message: "Невірний пароль" } }, 400);
+  if (u.totpEnabled !== 1) return c.json({ error: { code: "no_2fa", message: "2ФА не увімкнено" } }, 409);
+  const codes = generateBackupCodes();
+  const hashes = await Promise.all(codes.map(hashBackupCode));
+  await db.delete(recoveryCodes).where(eq(recoveryCodes.userId, uid));
+  await db.insert(recoveryCodes).values(hashes.map((codeHash) => ({ userId: uid, codeHash })));
+  await writeAudit(db, { userId: uid, action: "user.2fa_reset", entityType: "user", entityId: String(uid), payload: { backupCodesRegenerated: true }, ip });
+  return c.json({ backupCodes: codes.map(formatBackupCode) });
+});

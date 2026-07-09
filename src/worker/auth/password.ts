@@ -18,6 +18,23 @@ export async function hashPassword(password: string): Promise<string> {
   return `pbkdf2$sha256$${ITERATIONS}$${toB64(salt)}$${toB64(derived)}`;
 }
 
+const TEMP_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+/** Тимчасовий пароль (rejection sampling — без modulo-bias). */
+export function generateTempPassword(len = 16): string {
+  const L = TEMP_ALPHABET.length;
+  const max = 256 - (256 % L);
+  const out: string[] = [];
+  while (out.length < len) {
+    for (const b of randomBytes(len)) {
+      if (b < max) {
+        out.push(TEMP_ALPHABET[b % L]);
+        if (out.length === len) break;
+      }
+    }
+  }
+  return out.join("");
+}
+
 export async function verifyPassword(password: string, stored: string): Promise<boolean> {
   const parts = stored.split("$");
   if (parts.length !== 5 || parts[0] !== "pbkdf2" || parts[1] !== "sha256") return false;

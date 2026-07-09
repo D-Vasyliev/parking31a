@@ -51,7 +51,9 @@ searchRouter.get("/", async (c) => {
   const ownerResults: SearchOwner[] = [];
   for (const o of ownerRows) {
     const nameMatch = o.fullName.toLowerCase().includes(ql);
-    const phoneMatch = qDigits.length >= 3 && o.phone != null && digitsOf(o.phone).includes(qDigits);
+    const phoneMatch =
+      qDigits.length >= 3 &&
+      ((o.phone != null && digitsOf(o.phone).includes(qDigits)) || (o.phone2 != null && digitsOf(o.phone2).includes(qDigits)));
     if (nameMatch || phoneMatch) ownerResults.push({ id: o.id, fullName: o.fullName, phone: o.phone });
     if (ownerResults.length >= 8) break;
   }

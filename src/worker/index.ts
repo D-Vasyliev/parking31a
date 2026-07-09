@@ -1,12 +1,15 @@
 import { Hono } from "hono";
 import type { Env, AppContext } from "./env";
-import { csrf } from "./middleware";
+import { csrf, requireAuth, requireAdmin } from "./middleware";
 import { authRouter } from "./routes/auth";
 import { spotsRouter } from "./routes/spots";
 import { ownersRouter } from "./routes/owners";
 import { notesRouter } from "./routes/notes";
 import { projectsRouter } from "./routes/projects";
 import { searchRouter } from "./routes/search";
+import { usersRouter } from "./routes/users";
+import { auditRouter } from "./routes/audit";
+import { runBackup, cleanupExpired } from "./cron";
 
 const app = new Hono<AppContext>();
 
@@ -22,8 +25,15 @@ app.route("/api/owners", ownersRouter);
 app.route("/api/notes", notesRouter);
 app.route("/api/projects", projectsRouter);
 app.route("/api/search", searchRouter);
+app.route("/api/users", usersRouter);
+app.route("/api/audit", auditRouter);
 
-// Заготовки під наступні етапи (audit) — під requireAuth.
+// Ручний запуск бекапу (адмін)
+app.post("/api/backup", requireAuth, requireAdmin, async (c) => {
+  const date = new Date().toISOString().slice(0, 10);
+  const res = await runBackup(c.env, date);
+  return c.json({ ok: true, ...res });
+});
 
 app.all("/api/*", (c) => c.json({ error: { code: "not_found", message: "Ендпоінт не знайдено" } }, 404));
 
@@ -58,8 +68,18 @@ export default {
     return withSecurityHeaders(res, url);
   },
 
-  // Етап 6: щонічний експорт D1 → R2.
-  async scheduled(_event: ScheduledController, _env: Env, _ctx: ExecutionContext): Promise<void> {
-    // TODO(stage-6): dump D1 → gzip → BACKUPS.put(`backups/parking-YYYY-MM-DD.sql.gz`)
+  // Щоніч ~03:00 Києва: очистка протухлих сесій + бекап D1 → R2.
+  async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(
+      (async () => {
+        const now = new Date();
+        try {
+          await cleanupExpired(env, now.toISOString());
+          await runBackup(env, now.toISOString().slice(0, 10));
+        } catch (err) {
+          console.error("scheduled backup failed:", err);
+        }
+      })(),
+    );
   },
 } satisfies ExportedHandler<Env>;

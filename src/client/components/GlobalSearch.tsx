@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiGet } from "../api";
 import type { SearchResults } from "../../shared/api";
@@ -15,6 +15,7 @@ export function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
+  const reqId = useRef(0);
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
@@ -43,8 +44,10 @@ export function GlobalSearch() {
       setOpen(false);
       return;
     }
+    const id = ++reqId.current;
     const t = setTimeout(async () => {
       const r = await apiGet<SearchResults>(`/api/search?q=${encodeURIComponent(q.trim())}`);
+      if (reqId.current !== id) return; // застаріла відповідь — ігноруємо
       if (r.ok && r.data) {
         setRes(r.data);
         setOpen(true);
@@ -54,10 +57,16 @@ export function GlobalSearch() {
   }, [q]);
 
   function go(path: string) {
+    reqId.current++;
     setOpen(false);
     setQ("");
     setRes(null);
     nav(path);
+  }
+  function onKey(e: ReactKeyboardEvent<HTMLInputElement>) {
+    if (e.key !== "Enter" || !res) return;
+    const first = res.spots[0] ? `/spots/${res.spots[0].number}` : res.owners[0] ? `/owners/${res.owners[0].id}` : res.projects[0] ? `/projects/${res.projects[0].id}` : null;
+    if (first) go(first);
   }
   const total = res ? res.spots.length + res.owners.length + res.projects.length : 0;
 
@@ -71,6 +80,7 @@ export function GlobalSearch() {
         aria-label="Глобальний пошук"
         value={q}
         onChange={(e) => setQ(e.target.value)}
+        onKeyDown={onKey}
         onFocus={() => {
           if (res) setOpen(true);
         }}

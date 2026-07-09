@@ -13,6 +13,13 @@ export const requireAuth = createMiddleware<AppContext>(async (c, next) => {
   await next();
 });
 
+/** Вимагає роль admin (після requireAuth). */
+export const requireAdmin = createMiddleware<AppContext>(async (c, next) => {
+  const u = c.get("user");
+  if (!u || u.role !== "admin") return c.json({ error: { code: "forbidden", message: "Лише для адміністратора" } }, 403);
+  await next();
+});
+
 /** Вимагає чинну pending-сесію заданого етапу (enroll | totp). */
 export function requirePending(stage: Stage) {
   return createMiddleware<AppContext>(async (c, next) => {

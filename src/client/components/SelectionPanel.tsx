@@ -22,10 +22,14 @@ export function SelectionPanel({ spots, onClear, onChanged }: Props) {
     });
   }, []);
 
-  function copy() {
+  async function copy() {
     const tsv = ["№\tПІП\tТелефон\tАвто\tБорг", ...spots.map((s) => `${s.number}\t${s.ownerName ?? ""}\t${s.ownerPhone ?? ""}\t${s.plate ?? ""}\t${s.hasDebt ? "так" : ""}`)].join("\n");
-    void navigator.clipboard?.writeText(tsv);
-    setMsg("Скопійовано в буфер");
+    try {
+      await navigator.clipboard.writeText(tsv);
+      setMsg("Скопійовано в буфер");
+    } catch {
+      setMsg("Не вдалося скопіювати");
+    }
   }
   function exportCsv() {
     const rows = [
@@ -51,20 +55,30 @@ export function SelectionPanel({ spots, onClear, onChanged }: Props) {
       setMsg("Помилка");
       return;
     }
+    const before = r.data.participants.length;
     const union = Array.from(new Set([...r.data.participants.map((p) => p.number), ...numbers]));
-    const put = await apiPut(`/api/projects/${addId}/spots`, { numbers: union });
+    const put = await apiPut<ProjectDetail>(`/api/projects/${addId}/spots`, { numbers: union });
     setBusy(false);
-    setMsg(put.ok ? `Додано ${numbers.length} місць до проєкту` : (put.error?.message ?? "Помилка"));
-    if (put.ok) onChanged();
+    if (put.ok && put.data) {
+      const added = put.data.participants.length - before;
+      setMsg(`Додано ${added} нових місць (у проєкті ${put.data.participants.length})`);
+      onChanged();
+    } else setMsg(put.error?.message ?? "Помилка");
   }
   async function markPaid() {
     if (!payId) return;
     setBusy(true);
     setMsg(null);
-    const r = await apiPost(`/api/projects/${payId}/payments`, { numbers });
+    const r = await apiPost<ProjectDetail>(`/api/projects/${payId}/payments`, { numbers });
     setBusy(false);
-    setMsg(r.ok ? "Оплату позначено" : (r.error?.message ?? "Помилка"));
-    if (r.ok) onChanged();
+    if (r.ok && r.data) {
+      const parts = r.data.participants;
+      const matched = numbers.filter((n) => parts.some((p) => p.number === n));
+      const paid = numbers.filter((n) => parts.some((p) => p.number === n && p.paidAt));
+      const notInProject = numbers.length - matched.length;
+      setMsg(`Сплачено серед обраних: ${paid.length}${notInProject ? ` · не в проєкті: ${notInProject}` : ""}`);
+      onChanged();
+    } else setMsg(r.error?.message ?? "Помилка");
   }
 
   const editable = projects.filter((p) => p.status === "draft" || p.status === "active");

@@ -267,3 +267,52 @@ export interface SearchResults {
   owners: SearchOwner[];
   projects: SearchProject[];
 }
+
+// ─── Сервіс: користувачі, аудит, безпека (етап 6) ───
+
+export interface UserView {
+  id: number;
+  email: string;
+  role: Role;
+  isActive: boolean;
+  totpEnabled: boolean;
+  mustChangePw: boolean;
+  createdAt: string;
+}
+export interface CreateUserBody {
+  email: string;
+}
+export interface TempPasswordResult {
+  email: string;
+  tempPassword: string;
+}
+
+export interface AuditEntryView {
+  id: number;
+  at: string;
+  userEmail: string | null;
+  action: string;
+  entityType: string | null;
+  entityId: string | null;
+  payload: string | null;
+  ip: string | null;
+}
+export interface AuditQuery {
+  action?: string;
+  from?: string;
+  to?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface ChangePasswordBody {
+  currentPassword: string;
+  newPassword: string;
+}
+export interface Reenroll2faConfirmBody {
+  password: string;
+  code: string;
+}
+export interface BackupCodesBody {
+  password: string;
+}

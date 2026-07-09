@@ -46,7 +46,9 @@ export function AppLayout() {
           <NavLink to="/projects" className={navClass}>
             Проєкти
           </NavLink>
-          <span className="app-nav-item muted">Налаштування</span>
+          <NavLink to="/settings" className={navClass}>
+            Налаштування
+          </NavLink>
         </nav>
         <div className="app-user">
           <span className="app-email">{user?.email}</span>
@@ -58,6 +60,20 @@ export function AppLayout() {
       <main className="app-body">
         <Outlet />
       </main>
+      <nav className="bottom-nav">
+        <NavLink to="/" end className={navClass}>
+          Мапа
+        </NavLink>
+        <NavLink to="/owners" className={navClass}>
+          Власники
+        </NavLink>
+        <NavLink to="/projects" className={navClass}>
+          Проєкти
+        </NavLink>
+        <NavLink to="/settings" className={navClass}>
+          Ще
+        </NavLink>
+      </nav>
     </div>
   );
 }
