@@ -4,7 +4,7 @@ import { apiGet } from "../api";
 import { ParkingMap } from "../map/ParkingMap";
 import { LEVEL_META, type LevelKey } from "../map/geometry";
 import { SpotCard } from "../components/SpotCard";
-import type { SpotSummary } from "../../shared/api";
+import type { SpotSummary, ProjectListItem } from "../../shared/api";
 
 export function MapPage() {
   const { number } = useParams();
@@ -14,9 +14,13 @@ export function MapPage() {
   const [search, setSearch] = useState("");
   const [highlight, setHighlight] = useState<number | null>(null);
 
+  const [activeProjects, setActiveProjects] = useState(0);
+
   async function load() {
     const r = await apiGet<SpotSummary[]>("/api/spots");
     if (r.ok && r.data) setSpots(r.data);
+    const pr = await apiGet<ProjectListItem[]>("/api/projects");
+    if (pr.ok && pr.data) setActiveProjects(pr.data.filter((x) => x.status === "active").length);
   }
   useEffect(() => {
     void load();
@@ -79,6 +83,8 @@ export function MapPage() {
         <div className="map-stats">
           <span className="legend-dot free" /> Вільно: <b>{levelSpots.length - occupied}</b>
           <span className="legend-dot occupied" /> Зайнято: <b>{occupied}</b> / {levelSpots.length}
+          <span className="legend-dot debt" /> З боргом: <b>{spots.filter((s) => s.hasDebt).length}</b>
+          <span className="stat-sep">·</span> Активних проєктів: <b>{activeProjects}</b>
         </div>
       </div>
 

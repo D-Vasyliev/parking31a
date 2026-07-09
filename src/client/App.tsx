@@ -8,6 +8,8 @@ import { Enroll } from "./pages/Enroll";
 import { MapPage } from "./pages/MapPage";
 import { Owners } from "./pages/Owners";
 import { OwnerDetail } from "./pages/OwnerDetail";
+import { Projects } from "./pages/Projects";
+import { ProjectDetail } from "./pages/ProjectDetail";
 
 export function App() {
   return (
@@ -28,6 +30,8 @@ export function App() {
             <Route path="/spots/:number" element={<MapPage />} />
             <Route path="/owners" element={<Owners />} />
             <Route path="/owners/:id" element={<OwnerDetail />} />
+            <Route path="/projects" element={<Projects />} />
+            <Route path="/projects/:id" element={<ProjectDetail />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

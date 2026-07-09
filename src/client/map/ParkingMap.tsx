@@ -8,15 +8,19 @@ interface Props {
   selected: number | null;
   highlight: number | null;
   onSelect: (n: number) => void;
+  // режим вибору (map-picker)
+  picker?: boolean;
+  chosen?: Set<number>;
+  locked?: Set<number>;
 }
 
-export function ParkingMap({ level, occupancy, selected, highlight, onSelect }: Props) {
+export function ParkingMap({ level, occupancy, selected, highlight, onSelect, picker, chosen, locked }: Props) {
   const lay = useMemo(() => layout(level), [level]);
   const targetN = highlight ?? selected;
   const targetRef = useRef<SVGGElement>(null);
   useEffect(() => {
-    targetRef.current?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
-  }, [targetN, level]);
+    if (!picker) targetRef.current?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+  }, [targetN, level, picker]);
 
   return (
     <div className="map-scroll">
@@ -33,27 +37,26 @@ export function ParkingMap({ level, occupancy, selected, highlight, onSelect }: 
         ))}
         {lay.stalls.map((s) => {
           const occ = occupancy.get(s.n);
-          const cls = [
-            "pm-stall",
-            occ?.occupied ? "occupied" : "free",
-            selected === s.n ? "selected" : "",
-            highlight === s.n ? "found" : "",
-          ]
-            .filter(Boolean)
-            .join(" ");
-          const title = occ?.occupied ? `№${s.n} · ${occ.ownerName ?? ""}` : `№${s.n} · вільне`;
+          const isLocked = picker && locked?.has(s.n);
+          const isChosen = picker && chosen?.has(s.n);
+          const cls = picker
+            ? ["pm-stall", isChosen ? "occupied" : "free", isLocked ? "locked" : ""].filter(Boolean).join(" ")
+            : ["pm-stall", occ?.occupied ? "occupied" : "free", selected === s.n ? "selected" : "", highlight === s.n ? "found" : ""].filter(Boolean).join(" ");
+          const title = picker ? `№${s.n}${isLocked ? " · сплачено" : ""}` : occ?.occupied ? `№${s.n} · ${occ.ownerName ?? ""}` : `№${s.n} · вільне`;
+          const clickable = !isLocked;
           return (
             <g
               key={s.n}
               ref={targetN === s.n ? targetRef : undefined}
               className={cls}
               transform={`translate(${s.x},${s.y})`}
-              tabIndex={0}
+              tabIndex={clickable ? 0 : -1}
               role="button"
               aria-label={title}
-              onClick={() => onSelect(s.n)}
+              aria-pressed={picker ? !!isChosen : undefined}
+              onClick={clickable ? () => onSelect(s.n) : undefined}
               onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
+                if (clickable && (e.key === "Enter" || e.key === " ")) {
                   e.preventDefault();
                   onSelect(s.n);
                 }
@@ -64,6 +67,8 @@ export function ParkingMap({ level, occupancy, selected, highlight, onSelect }: 
               <text x={s.w / 2} y={s.h / 2 + 1} textAnchor="middle" dominantBaseline="middle">
                 {s.n}
               </text>
+              {!picker && occ?.hasDebt ? <circle className="pm-debt" cx={s.w - 7} cy={7} r={4} /> : null}
+              {isLocked ? <text className="pm-lock" x={s.w - 8} y={12}>🔒</text> : null}
             </g>
           );
         })}

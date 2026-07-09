@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { apiGet, apiPost, apiPut, apiPatch, apiDelete, type ApiResult } from "../api";
-import { formatDate } from "../format";
-import type { SpotDetail, SpotOwnerView } from "../../shared/api";
+import { formatDate, formatKop } from "../format";
+import type { SpotDetail, SpotOwnerView, PaymentStatus } from "../../shared/api";
+
+const PAY_LABEL: Record<PaymentStatus, string> = { unpaid: "Не сплачено", paid: "Сплачено", overpaid: "Переплата", underpaid: "Доплата" };
 
 interface Props {
   number: number;
@@ -298,6 +300,26 @@ export function SpotCard({ number, onClose, onChanged }: Props) {
                   {d.history.map((h, i) => (
                     <li key={i} className="past">
                       {h.fullName} {!h.isPrimary ? "(співвл.)" : ""} · {formatDate(h.startedAt)} — {formatDate(h.endedAt)}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
+            {/* Участь у проєктах */}
+            {d.projects.length > 0 ? (
+              <section className="card-sec">
+                <div className="sec-head">
+                  <h3>Участь у проєктах</h3>
+                </div>
+                <ul className="proj-list">
+                  {d.projects.map((pr) => (
+                    <li key={pr.projectId}>
+                      <Link to={`/projects/${pr.projectId}`}>{pr.title}</Link>
+                      <span className="proj-meta">
+                        <span className={`pay ${pr.paymentStatus}`}>{PAY_LABEL[pr.paymentStatus]}</span>
+                        <span className="muted-line">{formatKop(pr.shareKop)}</span>
+                      </span>
                     </li>
                   ))}
                 </ul>

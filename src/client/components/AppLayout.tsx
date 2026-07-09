@@ -41,7 +41,9 @@ export function AppLayout() {
           <NavLink to="/owners" className={navClass}>
             Власники
           </NavLink>
-          <span className="app-nav-item muted">Проєкти</span>
+          <NavLink to="/projects" className={navClass}>
+            Проєкти
+          </NavLink>
           <span className="app-nav-item muted">Налаштування</span>
         </nav>
         <div className="app-user">

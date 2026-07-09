@@ -75,6 +75,7 @@ export interface SpotSummary {
   sheet: number;
   occupied: boolean;
   ownerName: string | null;
+  hasDebt: boolean;
 }
 
 export interface SpotOwnerView {
@@ -104,6 +105,18 @@ export interface NoteView {
   projectId: number | null;
 }
 
+export type PaymentStatus = "unpaid" | "paid" | "overpaid" | "underpaid";
+
+export interface SpotProjectView {
+  projectId: number;
+  title: string;
+  status: ProjectStatus;
+  shareKop: number;
+  paidKop: number;
+  paidAt: string | null;
+  paymentStatus: PaymentStatus;
+}
+
 export interface SpotDetail {
   number: number;
   section: Section;
@@ -114,6 +127,7 @@ export interface SpotDetail {
   owners: SpotOwnerView[];
   history: OwnerHistoryEntry[];
   notes: NoteView[];
+  projects: SpotProjectView[];
 }
 
 export interface SpotUpdateBody {
@@ -158,3 +172,73 @@ export interface OwnerDetail {
 export interface NoteCreateBody {
   body: string;
 }
+
+// ─── Проєкти (етап 4) ───
+
+export type ProjectStatus = "draft" | "active" | "completed" | "archived";
+export type PaymentMethod = "cash" | "transfer" | "other";
+
+export interface ProjectListItem {
+  id: number;
+  title: string;
+  status: ProjectStatus;
+  cancelled: boolean;
+  totalKop: number;
+  spotCount: number;
+  paidCount: number;
+  collectedKop: number;
+}
+
+export interface ProjectParticipant {
+  spotId: number;
+  number: number;
+  section: Section;
+  ownerName: string | null;
+  shareKop: number;
+  paidKop: number;
+  paidAt: string | null;
+  paymentMethod: PaymentMethod | null;
+  paymentNote: string | null;
+  status: PaymentStatus;
+  delta: number;
+}
+
+export interface ProjectDetail {
+  id: number;
+  title: string;
+  description: string | null;
+  status: ProjectStatus;
+  cancelled: boolean;
+  totalKop: number;
+  createdAt: string;
+  activatedAt: string | null;
+  completedAt: string | null;
+  archivedAt: string | null;
+  collectedKop: number;
+  participants: ProjectParticipant[];
+}
+
+export interface ProjectCreateBody {
+  title: string;
+  description?: string | null;
+  totalKop: number;
+}
+export interface ProjectUpdateBody {
+  title?: string;
+  description?: string | null;
+  totalKop?: number;
+}
+export interface SetSpotsBody {
+  numbers: number[]; // номери місць-учасників (повний набір)
+}
+export interface MarkPaidBody {
+  numbers: number[]; // номери місць, які позначаємо сплаченими
+  paymentMethod?: PaymentMethod;
+  paymentNote?: string | null;
+  paidAt?: string;
+}
+export interface CancelPaymentBody {
+  number: number; // номер місця
+  reason: string;
+}
+export type ProjectTransition = "activate" | "complete" | "uncomplete" | "to_draft" | "cancel" | "archive" | "unarchive";

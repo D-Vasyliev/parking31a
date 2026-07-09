@@ -3,10 +3,11 @@ import { and, asc, desc, eq, isNull, isNotNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { AppContext } from "../env";
 import { createDb, type DB } from "../db";
-import { spots, spotOwners, owners, notes, users, auditLog } from "../db/schema";
+import { spots, spotOwners, owners, notes, users, auditLog, projects, projectSpots } from "../db/schema";
 import { requireAuth } from "../middleware";
+import { paymentStatus } from "../../shared/shares";
 import type { Section } from "../../shared/spots";
-import type { SpotSummary, SpotDetail, SpotOwnerView, OwnerHistoryEntry, NoteView } from "../../shared/api";
+import type { SpotSummary, SpotDetail, SpotOwnerView, OwnerHistoryEntry, NoteView, SpotProjectView } from "../../shared/api";
 
 const NOT_FOUND = { error: { code: "not_found", message: "Місце не знайдено" } } as const;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -72,6 +73,20 @@ async function buildDetail(db: DB, spot: typeof spots.$inferSelect): Promise<Spo
     .where(eq(notes.spotId, spot.id))
     .orderBy(desc(notes.createdAt), desc(notes.id));
 
+  const projectRows = await db
+    .select({
+      projectId: projects.id,
+      title: projects.title,
+      status: projects.status,
+      shareKop: projectSpots.shareKop,
+      paidKop: projectSpots.paidKop,
+      paidAt: projectSpots.paidAt,
+    })
+    .from(projectSpots)
+    .innerJoin(projects, eq(projects.id, projectSpots.projectId))
+    .where(eq(projectSpots.spotId, spot.id))
+    .orderBy(desc(projects.id));
+
   return {
     number: Number(spot.number),
     section: spot.section as Section,
@@ -93,6 +108,17 @@ async function buildDetail(db: DB, spot: typeof spots.$inferSelect): Promise<Spo
     ),
     history: historyRows.map((r): OwnerHistoryEntry => ({ fullName: r.fullName, isPrimary: r.isPrimary === 1, startedAt: r.startedAt, endedAt: r.endedAt })),
     notes: noteRows.map((r): NoteView => ({ id: r.id, kind: r.kind, body: r.body, createdAt: r.createdAt, createdByEmail: r.email, projectId: r.projectId })),
+    projects: projectRows.map(
+      (r): SpotProjectView => ({
+        projectId: r.projectId,
+        title: r.title,
+        status: r.status,
+        shareKop: r.shareKop,
+        paidKop: r.paidKop,
+        paidAt: r.paidAt,
+        paymentStatus: paymentStatus(r.shareKop, r.paidKop, r.paidAt),
+      }),
+    ),
   };
 }
 
@@ -109,12 +135,21 @@ spotsRouter.get("/", async (c) => {
     .leftJoin(owners, eq(owners.id, spotOwners.ownerId))
     .orderBy(asc(spots.id));
 
+  // Місця з боргом: несплачена частка (>0) в активному проєкті.
+  const debtRows = await db
+    .selectDistinct({ number: spots.number })
+    .from(projectSpots)
+    .innerJoin(projects, eq(projects.id, projectSpots.projectId))
+    .innerJoin(spots, eq(spots.id, projectSpots.spotId))
+    .where(and(eq(projects.status, "active"), isNull(projectSpots.paidAt), sql`${projectSpots.shareKop} > 0`));
+  const debt = new Set(debtRows.map((r) => r.number));
+
   // Кілька рядків на місце (primary + співвласники) — згортаємо.
   const map = new Map<string, SpotSummary>();
   for (const r of rows) {
     let s = map.get(r.number);
     if (!s) {
-      s = { number: Number(r.number), section: r.section as Section, sheet: r.sheet, occupied: false, ownerName: null };
+      s = { number: Number(r.number), section: r.section as Section, sheet: r.sheet, occupied: false, ownerName: null, hasDebt: debt.has(r.number) };
       map.set(r.number, s);
     }
     if (r.ownerName) {

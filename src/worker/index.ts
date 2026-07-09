@@ -5,6 +5,7 @@ import { authRouter } from "./routes/auth";
 import { spotsRouter } from "./routes/spots";
 import { ownersRouter } from "./routes/owners";
 import { notesRouter } from "./routes/notes";
+import { projectsRouter } from "./routes/projects";
 
 const app = new Hono<AppContext>();
 
@@ -18,8 +19,9 @@ app.route("/api/auth", authRouter);
 app.route("/api/spots", spotsRouter);
 app.route("/api/owners", ownersRouter);
 app.route("/api/notes", notesRouter);
+app.route("/api/projects", projectsRouter);
 
-// Заготовки під наступні етапи (projects, audit) — під requireAuth.
+// Заготовки під наступні етапи (audit) — під requireAuth.
 
 app.all("/api/*", (c) => c.json({ error: { code: "not_found", message: "Ендпоінт не знайдено" } }, 404));
 
