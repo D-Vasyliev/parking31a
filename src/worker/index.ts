@@ -2,6 +2,9 @@ import { Hono } from "hono";
 import type { Env, AppContext } from "./env";
 import { csrf } from "./middleware";
 import { authRouter } from "./routes/auth";
+import { spotsRouter } from "./routes/spots";
+import { ownersRouter } from "./routes/owners";
+import { notesRouter } from "./routes/notes";
 
 const app = new Hono<AppContext>();
 
@@ -12,8 +15,11 @@ app.get("/api/health", (c) =>
 );
 
 app.route("/api/auth", authRouter);
+app.route("/api/spots", spotsRouter);
+app.route("/api/owners", ownersRouter);
+app.route("/api/notes", notesRouter);
 
-// Заготовки під наступні етапи (spots, owners, projects, notes, audit) — під requireAuth.
+// Заготовки під наступні етапи (projects, audit) — під requireAuth.
 
 app.all("/api/*", (c) => c.json({ error: { code: "not_found", message: "Ендпоінт не знайдено" } }, 404));
 

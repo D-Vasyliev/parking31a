@@ -1,10 +1,13 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./auth";
 import { Protected } from "./components/Protected";
+import { AppLayout } from "./components/AppLayout";
 import { Login } from "./pages/Login";
 import { TwoFactor } from "./pages/TwoFactor";
 import { Enroll } from "./pages/Enroll";
-import { Dashboard } from "./pages/Dashboard";
+import { MapPage } from "./pages/MapPage";
+import { Owners } from "./pages/Owners";
+import { OwnerDetail } from "./pages/OwnerDetail";
 
 export function App() {
   return (
@@ -15,13 +18,17 @@ export function App() {
           <Route path="/login/2fa" element={<TwoFactor />} />
           <Route path="/login/setup-2fa" element={<Enroll />} />
           <Route
-            path="/"
             element={
               <Protected>
-                <Dashboard />
+                <AppLayout />
               </Protected>
             }
-          />
+          >
+            <Route path="/" element={<MapPage />} />
+            <Route path="/spots/:number" element={<MapPage />} />
+            <Route path="/owners" element={<Owners />} />
+            <Route path="/owners/:id" element={<OwnerDetail />} />
+          </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

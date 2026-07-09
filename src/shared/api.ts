@@ -1,4 +1,5 @@
 // Спільні типи API (worker ↔ client).
+import type { Section } from "./spots";
 
 export type Role = "admin" | "viewer";
 
@@ -65,3 +66,94 @@ export interface SessionInfo {
 }
 
 export const PASSWORD_MIN_LENGTH = 12;
+
+// ─── Місця / власники / нотатки (етап 3) ───
+
+export interface SpotSummary {
+  number: number;
+  section: Section;
+  sheet: number;
+  occupied: boolean;
+  ownerName: string | null;
+}
+
+export interface SpotOwnerView {
+  ownerId: number;
+  fullName: string;
+  phone: string | null;
+  phone2: string | null;
+  email: string | null;
+  isPrimary: boolean;
+  startedAt: string;
+}
+
+export interface OwnerHistoryEntry {
+  fullName: string;
+  isPrimary: boolean;
+  startedAt: string;
+  endedAt: string | null;
+}
+
+export interface NoteView {
+  id: number;
+  kind: "manual" | "project_auto";
+  body: string;
+  createdAt: string;
+  createdByEmail: string | null;
+  projectId: number | null;
+}
+
+export interface SpotDetail {
+  number: number;
+  section: Section;
+  sheet: number;
+  plate: string | null;
+  carMake: string | null;
+  carModel: string | null;
+  owners: SpotOwnerView[];
+  history: OwnerHistoryEntry[];
+  notes: NoteView[];
+}
+
+export interface SpotUpdateBody {
+  plate?: string | null;
+  carMake?: string | null;
+  carModel?: string | null;
+}
+
+export interface SetOwnerBody {
+  fullName: string;
+  phone?: string | null;
+  phone2?: string | null;
+  email?: string | null;
+  comment?: string | null;
+}
+
+export interface OwnerUpdateBody {
+  fullName?: string;
+  phone?: string | null;
+  phone2?: string | null;
+  email?: string | null;
+  comment?: string | null;
+}
+
+export interface OwnerListItem {
+  id: number;
+  fullName: string;
+  phone: string | null;
+  spots: number[];
+}
+
+export interface OwnerDetail {
+  id: number;
+  fullName: string;
+  phone: string | null;
+  phone2: string | null;
+  email: string | null;
+  comment: string | null;
+  spots: { number: number; section: Section }[];
+}
+
+export interface NoteCreateBody {
+  body: string;
+}

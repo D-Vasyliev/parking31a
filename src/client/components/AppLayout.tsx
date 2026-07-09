@@ -1,15 +1,14 @@
-import { useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
 
-export function Dashboard() {
+export function AppLayout() {
   const { user, logout } = useAuth();
   const nav = useNavigate();
-
   async function onLogout() {
     await logout();
     nav("/login", { replace: true });
   }
-
+  const navClass = ({ isActive }: { isActive: boolean }) => "app-nav-item" + (isActive ? " active" : "");
   return (
     <div className="app">
       <header className="app-bar">
@@ -18,9 +17,13 @@ export function Dashboard() {
           <strong>Керування</strong>
         </div>
         <nav className="app-nav">
-          <span className="app-nav-item active">Мапа</span>
+          <NavLink to="/" end className={navClass}>
+            Мапа
+          </NavLink>
+          <NavLink to="/owners" className={navClass}>
+            Власники
+          </NavLink>
           <span className="app-nav-item muted">Проєкти</span>
-          <span className="app-nav-item muted">Власники</span>
           <span className="app-nav-item muted">Налаштування</span>
         </nav>
         <div className="app-user">
@@ -30,18 +33,8 @@ export function Dashboard() {
           </button>
         </div>
       </header>
-
       <main className="app-body">
-        <div className="placeholder card">
-          <p className="eyebrow">Наступний етап</p>
-          <h1>Мапа паркінгу</h1>
-          <p className="sub">
-            Ви увійшли як <strong>{user?.email}</strong>. Автентифікація з 2ФА працює.
-          </p>
-          <p className="foot">
-            Етап 3 додасть інтерактивну схему на 181 місце, картки власників і нотатки. Далі — проєкти, мультивибір, пошук.
-          </p>
-        </div>
+        <Outlet />
       </main>
     </div>
   );
