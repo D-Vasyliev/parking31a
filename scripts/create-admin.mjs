@@ -27,8 +27,18 @@ async function hashPassword(pw) {
 
 function genPassword(len = 16) {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%";
-  const bytes = crypto.getRandomValues(new Uint8Array(len));
-  return [...bytes].map((b) => alphabet[b % alphabet.length]).join("");
+  const L = alphabet.length;
+  const max = 256 - (256 % L); // rejection sampling — без modulo-bias
+  const out = [];
+  while (out.length < len) {
+    for (const b of crypto.getRandomValues(new Uint8Array(len))) {
+      if (b < max) {
+        out.push(alphabet[b % L]);
+        if (out.length === len) break;
+      }
+    }
+  }
+  return out.join("");
 }
 
 const args = parseArgs(process.argv.slice(2));

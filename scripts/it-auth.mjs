@@ -150,6 +150,21 @@ async function main() {
   r = await req("GET", "/api/health");
   ok(r.headers.get("x-content-type-options") === "nosniff", "X-Content-Type-Options: nosniff");
 
+  console.log("\n[lockout / без enumeration]");
+  wrangler(`UPDATE users SET failed_logins=0, locked_until=NULL WHERE email='${EMAIL}'`);
+  jar.clear();
+  let all401 = true;
+  let any429 = false;
+  for (let i = 0; i < 5; i++) {
+    const rr = await req("POST", "/api/auth/login", { email: EMAIL, password: "definitely-wrong" });
+    if (rr.status !== 401) all401 = false;
+    if (rr.status === 429) any429 = true;
+  }
+  ok(all401 && !any429, "5 невдалих спроб → усі 401, без окремого 429 (без enumeration)");
+  const locked = await req("POST", "/api/auth/login", { email: EMAIL, password: NEW_PW });
+  ok(locked.status === 401 && locked.json.error.code === "invalid_credentials", "правильний пароль під час локу → та сама 401");
+  jar.clear();
+
   console.log(`\n✅ Усі перевірки пройдено: ${passed}`);
 }
 

@@ -31,6 +31,7 @@ export async function verifyPassword(password: string, stored: string): Promise<
   } catch {
     return false;
   }
-  const derived = await deriveBits(password, salt, iterations, expected.length);
+  if (expected.length !== KEY_BYTES || salt.length === 0) return false; // фіксована коректна довжина
+  const derived = await deriveBits(password, salt, iterations, KEY_BYTES);
   return constantTimeEqual(derived, expected);
 }

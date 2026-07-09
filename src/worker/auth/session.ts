@@ -49,7 +49,8 @@ export async function createSession(db: DB, userId: number, ip: string | null, u
     ip,
     userAgent: ua,
   });
-  return { token, cookie: buildCookie(SESSION_COOKIE, token, SESSION_TTL / 1000) };
+  // Cookie живе до абсолютного максимуму (30д); rolling 7д ідле-таймаут — на сервері (expiresAt).
+  return { token, cookie: buildCookie(SESSION_COOKIE, token, SESSION_ABS_MAX / 1000) };
 }
 
 export async function validateSession(db: DB, token: string): Promise<{ user: SessionUser; sessionId: string } | null> {
@@ -77,7 +78,9 @@ export async function validateSession(db: DB, token: string): Promise<{ user: Se
 
   const lastSeen = row.lastSeenAt ? Date.parse(row.lastSeenAt) : 0;
   if (now - lastSeen > LAST_SEEN_THROTTLE) {
-    await db.update(sessions).set({ lastSeenAt: iso(now), expiresAt: iso(now + SESSION_TTL) }).where(eq(sessions.id, id));
+    const absCap = row.createdAt ? Date.parse(row.createdAt) + SESSION_ABS_MAX : now + SESSION_TTL;
+    const nextExpiry = Math.min(now + SESSION_TTL, absCap); // rolling 7д, але не понад абсолют 30д
+    await db.update(sessions).set({ lastSeenAt: iso(now), expiresAt: iso(nextExpiry) }).where(eq(sessions.id, id));
   }
   return { user: { id: row.uid, email: row.email, role: row.role }, sessionId: id };
 }
