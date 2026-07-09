@@ -153,7 +153,8 @@ CREATE TABLE project_spots (
   payment_note   TEXT,                        -- 'єдиний переказ за місця 12, 47' тощо
   added_at       TEXT NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (project_id, spot_id),
-  CHECK ((paid_at IS NULL AND paid_kop = 0) OR (paid_at IS NOT NULL AND paid_kop > 0))
+  -- не сплачено → paid_kop=0; сплачено → paid_kop>=0 (дозволяє частку 0 для дешевих проєктів)
+  CHECK (paid_kop >= 0 AND (paid_at IS NOT NULL OR paid_kop = 0))
 );
 CREATE INDEX idx_project_spots_spot ON project_spots(spot_id);
 
@@ -197,6 +198,8 @@ CREATE INDEX idx_audit_entity ON audit_log(entity_type, entity_id);
 ```
 base = ⌊total_kop / n⌋;  remainder = total_kop − base·n   (0 ≤ remainder < n)
 Місця сортуються за зростанням номера; перші `remainder` місць отримують base+1 коп., решта — base.
+> ⚠️ Реалізація: `number` — TEXT, тож сортувати **числово** — `ORDER BY CAST(number AS INTEGER)`,
+> інакше лексикографічний порядок (1,10,11,…,2) віддасть залишок не тим місцям.
 ```
 
 **Приклад:** 12 345,67 грн на 37 місць → `base = 33 366` коп., залишок 25 → **25 місць по 333,67 грн + 12 місць по 333,66 грн** = 1 234 567 коп. рівно.

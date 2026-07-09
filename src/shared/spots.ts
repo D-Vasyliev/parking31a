@@ -1,8 +1,17 @@
 // Канонічний перелік машиномісць (181 шт.), звірено із замовником 09.07.2026.
-// Єдине джерело правди для сіду БД та прив'язки до SVG-мапи.
+// Єдине джерело правди діапазонів — spot-ranges.json (його ж читає scripts/gen-seed.mjs).
+
+import rangesData from "./spot-ranges.json";
 
 export type Section = "А" | "Б" | "В" | "Г";
 export type Sheet = 1 | 2;
+
+export interface SectionRange {
+  from: number;
+  to: number;
+  sheet: Sheet;
+  section: Section;
+}
 
 export interface SpotDef {
   number: number;
@@ -12,12 +21,7 @@ export interface SpotDef {
 }
 
 /** Діапазони номерів по секціях (аркуш 1 = А/Б, аркуш 2 = В/Г). */
-export const SECTION_RANGES: ReadonlyArray<{ from: number; to: number; sheet: Sheet; section: Section }> = [
-  { from: 1, to: 44, sheet: 1, section: "Б" },
-  { from: 45, to: 88, sheet: 1, section: "А" },
-  { from: 89, to: 133, sheet: 2, section: "В" },
-  { from: 134, to: 181, sheet: 2, section: "Г" },
-];
+export const SECTION_RANGES = rangesData.ranges as readonly SectionRange[];
 
 export const SPOTS: SpotDef[] = SECTION_RANGES.flatMap((r) => {
   const out: SpotDef[] = [];

@@ -1,7 +1,9 @@
-// Drizzle-схема (типізація запитів). Джерело правди для БД — SQL-міграції у ./migrations;
-// ця схема дзеркалить їх для типобезпечних запитів у Worker.
+// Drizzle-схема (типізація запитів). Джерело правди для БД — SQL-міграції у ./migrations
+// (CHECK-обмеження, часткові унікальні індекси, COLLATE NOCASE та вторинні індекси живуть
+// ТАМ, не тут). `drizzle-kit generate` навмисно вимкнено — не регенерувати з цієї схеми.
 import { sql } from "drizzle-orm";
 import { sqliteTable, integer, text, primaryKey } from "drizzle-orm/sqlite-core";
+import type { Sheet } from "../../shared/spots";
 
 const now = sql`(datetime('now'))`;
 const today = sql`(date('now'))`;
@@ -59,7 +61,7 @@ export const owners = sqliteTable("owners", {
 export const spots = sqliteTable("spots", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   number: text("number").notNull().unique(),
-  sheet: integer("sheet").notNull(),
+  sheet: integer("sheet").$type<Sheet>().notNull(),
   section: text("section", { enum: ["А", "Б", "В", "Г"] }).notNull(),
   svgId: text("svg_id").unique(),
   plate: text("plate"),

@@ -1,5 +1,5 @@
 -- Міграція 0002 — сід машиномісць (181 шт., №1–181).
--- ЗГЕНЕРОВАНО scripts/gen-seed.mjs — не редагувати вручну.
+-- ЗГЕНЕРОВАНО scripts/gen-seed.mjs з src/shared/spot-ranges.json — не редагувати вручну.
 INSERT INTO spots (number, sheet, section, svg_id) VALUES
   ('1', 1, 'Б', 'spot-1'),
   ('2', 1, 'Б', 'spot-2'),

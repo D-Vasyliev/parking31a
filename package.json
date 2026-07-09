@@ -11,7 +11,7 @@
     "typecheck": "tsc -p tsconfig.worker.json && tsc -p tsconfig.client.json",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
-    "db:generate": "drizzle-kit generate",
+    "db:seed:gen": "node scripts/gen-seed.mjs",
     "db:migrate:local": "wrangler d1 migrations apply parking-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply parking-db --remote",
     "cf-typegen": "wrangler types",

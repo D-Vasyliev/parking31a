@@ -103,7 +103,8 @@ CREATE TABLE project_spots (
   payment_note   TEXT,
   added_at       TEXT NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (project_id, spot_id),
-  CHECK ((paid_at IS NULL AND paid_kop = 0) OR (paid_at IS NOT NULL AND paid_kop > 0))
+  -- не сплачено → paid_kop=0; сплачено → paid_kop>=0 (дозволяє частку 0 для дешевих проєктів)
+  CHECK (paid_kop >= 0 AND (paid_at IS NOT NULL OR paid_kop = 0))
 );
 CREATE INDEX idx_project_spots_spot ON project_spots(spot_id);
 

@@ -35,7 +35,7 @@ npm run dev                         # http://localhost:5173  → SPA + /api/*
 | `npm run preview` | Перегляд білду у workerd |
 | `npm run typecheck` | Перевірка типів (worker + client окремо) |
 | `npm test` | Юніт-тести (Vitest) |
-| `npm run db:generate` | Згенерувати SQL-міграцію зі схеми Drizzle |
+| `npm run db:seed:gen` | Перегенерувати сід місць (0002) зі spot-ranges.json |
 | `npm run db:migrate:local` / `:remote` | Застосувати міграції D1 |
 | `npm run cf-typegen` | Згенерувати типи прив'язок з `wrangler.jsonc` |
 | `npm run deploy` | Білд + `wrangler deploy` (зазвичай робить CI) |
