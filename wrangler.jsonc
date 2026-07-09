@@ -16,15 +16,20 @@
     {
       "binding": "DB",
       "database_name": "parking-db",
-      // Замінити реальним id після `wrangler d1 create parking-db` (етап 7).
-      // Для локальної розробки (--local) id не використовується.
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      // Створено `wrangler d1 create parking-db` (етап 7, регіон EEUR).
+      "database_id": "597de421-51bb-47d0-a8ea-fc44fa1321ea",
       "migrations_dir": "./migrations"
     }
   ],
 
   "r2_buckets": [
     { "binding": "BACKUPS", "bucket_name": "parking31a-backups" }
+  ],
+
+  // Кастомний домен (зона parking31a.com уже в акаунті). custom_domain=true
+  // просить Cloudflare створити DNS-запис і TLS-сертифікат автоматично.
+  "routes": [
+    { "pattern": "parking31a.com", "custom_domain": true }
   ],
 
   // Щоніч ~03:00 за Києвом: експорт D1 → R2 (реалізація на етапі 6).
