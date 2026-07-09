@@ -1,39 +1,51 @@
 import { Hono } from "hono";
+import type { Env, AppContext } from "./env";
+import { csrf } from "./middleware";
+import { authRouter } from "./routes/auth";
 
-/**
- * Прив'язки Worker (див. wrangler.jsonc).
- * Пізніше замінимо на згенеровані типи `wrangler types` за потреби.
- */
-export interface Env {
-  ASSETS: Fetcher;
-  DB: D1Database;
-  BACKUPS: R2Bucket;
-  TOTP_ENC_KEY: string;
-  APP_ENV: string;
-}
+const app = new Hono<AppContext>();
 
-const api = new Hono<{ Bindings: Env }>();
+app.use("/api/*", csrf);
 
-api.get("/api/health", (c) =>
-  c.json({
-    ok: true,
-    service: "parking31a",
-    env: c.env.APP_ENV ?? "dev",
-    time: new Date().toISOString(),
-  }),
+app.get("/api/health", (c) =>
+  c.json({ ok: true, service: "parking31a", env: c.env.APP_ENV ?? "dev", time: new Date().toISOString() }),
 );
 
-// Заготовки під наступні етапи (auth, spots, owners, projects, notes, audit).
-api.notFound((c) => c.json({ error: { code: "not_found", message: "Ендпоінт не знайдено" } }, 404));
+app.route("/api/auth", authRouter);
+
+// Заготовки під наступні етапи (spots, owners, projects, notes, audit) — під requireAuth.
+
+app.all("/api/*", (c) => c.json({ error: { code: "not_found", message: "Ендпоінт не знайдено" } }, 404));
+
+// Не зливаємо стек-трейси клієнту; деталі — лише в лог.
+app.onError((err, c) => {
+  console.error("API error:", err);
+  return c.json({ error: { code: "internal", message: "Внутрішня помилка сервера" } }, 500);
+});
+
+/** Додає security-заголовки до всіх відповідей; сувора CSP — лише поза localhost (щоб не ламати Vite HMR). */
+function withSecurityHeaders(res: Response, url: URL): Response {
+  const h = new Headers(res.headers);
+  h.set("X-Content-Type-Options", "nosniff");
+  h.set("Referrer-Policy", "same-origin");
+  const isLocal = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+  if (!isLocal) {
+    h.set(
+      "Content-Security-Policy",
+      "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'",
+    );
+    h.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+}
 
 export default {
-  fetch(request: Request, env: Env, ctx: ExecutionContext) {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
-    if (url.pathname.startsWith("/api/")) {
-      return api.fetch(request, env, ctx);
-    }
-    // Усе інше — статика SPA (у dev проксі на Vite з HMR).
-    return env.ASSETS.fetch(request);
+    const res = url.pathname.startsWith("/api/")
+      ? await app.fetch(request, env, ctx)
+      : await env.ASSETS.fetch(request);
+    return withSecurityHeaders(res, url);
   },
 
   // Етап 6: щонічний експорт D1 → R2.

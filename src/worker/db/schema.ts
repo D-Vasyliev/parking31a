@@ -47,6 +47,17 @@ export const sessions = sqliteTable("sessions", {
   userAgent: text("user_agent"),
 });
 
+export const pendingAuth = sqliteTable("pending_auth", {
+  id: text("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  stage: text("stage", { enum: ["enroll", "totp"] }).notNull(),
+  totpFails: integer("totp_fails").notNull().default(0),
+  createdAt: text("created_at").notNull().default(now),
+  expiresAt: text("expires_at").notNull(),
+});
+
 export const owners = sqliteTable("owners", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   fullName: text("full_name").notNull(),

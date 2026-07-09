@@ -17,6 +17,7 @@ worker-configuration.d.ts
 
 # editor / OS
 .claude/settings.local.json
+.claude/launch.json
 .vscode/*
 !.vscode/extensions.json
 .idea/
