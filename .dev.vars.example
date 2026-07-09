@@ -1,0 +1,6 @@
+# Скопіюйте цей файл у `.dev.vars` (він у .gitignore) для локальної розробки.
+# Значення нижче — ЛИШЕ для dev. У production задаються через `wrangler secret put`.
+
+# Ключ шифрування TOTP-секретів (AES-256-GCM). 32 випадкові байти у base64.
+# Згенерувати: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+TOTP_ENC_KEY="ZGV2LW9ubHktZGV2LW9ubHktZGV2LW9ubHktZGV2MDA="

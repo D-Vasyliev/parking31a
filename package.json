@@ -1,0 +1,40 @@
+{
+  "name": "parking31a",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Система керування підземним паркінгом — пр. Правди 31-33/31-А, Київ",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.worker.json && tsc -p tsconfig.client.json",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply parking-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply parking-db --remote",
+    "cf-typegen": "wrangler types",
+    "deploy": "vite build && wrangler deploy"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.44.6",
+    "hono": "^4.9.11",
+    "otpauth": "^9.4.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.13.14",
+    "@cloudflare/workers-types": "^5.20260708.1",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.1",
+    "@vitejs/plugin-react": "^5.0.4",
+    "drizzle-kit": "^0.31.5",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.9",
+    "vitest": "^3.2.4",
+    "wrangler": "^4.42.0"
+  }
+}

@@ -1,0 +1,622 @@
+<title>Схема паркінгу · пр. Правди 31-33 / 31-А</title>
+<style>
+  :root{
+    --paper:#EDF1F5; --sheet:#FFFFFF; --ink:#16222E; --muted:#5C6C7B;
+    --line:#9DB1C2; --wall:#3F5162; --road:#DCE4EB; --road-mark:#7C8FA0;
+    --accent:#1F5FBF; --accent-soft:rgba(31,95,191,.10);
+    --grid:rgba(31,95,191,.05);
+    --st-free-bg:#E7EEF5; --st-free-fg:#33465A; --st-free-bd:#B4C4D3;
+    --st-occ-bg:#D5473A; --st-occ-fg:#FFFFFF; --st-occ-bd:#B0362B;
+    --st-res-bg:#E39A2B; --st-res-fg:#3A2A05; --st-res-bd:#C07E15;
+    --st-flag-bg:#F4D33B; --st-flag-fg:#443B06; --st-flag-bd:#D8B61E;
+    --shadow:0 1px 2px rgba(16,34,46,.06),0 8px 24px rgba(16,34,46,.08);
+    --radius:10px;
+    --font:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+    --mono:"Cascadia Code","Consolas",ui-monospace,"SF Mono",Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --paper:#0B121A; --sheet:#101A25; --ink:#E6EEF6; --muted:#8DA0B2;
+      --line:#33485C; --wall:#607588; --road:#182430; --road-mark:#465b6e;
+      --accent:#6AA6FF; --accent-soft:rgba(106,166,255,.14);
+      --grid:rgba(106,166,255,.06);
+      --st-free-bg:#192735; --st-free-fg:#AEC0D2; --st-free-bd:#324a60;
+      --st-occ-bg:#E0574A; --st-occ-fg:#26100C; --st-occ-bd:#9c3a30;
+      --st-res-bg:#E3A43A; --st-res-fg:#2C2005; --st-res-bd:#a5771f;
+      --st-flag-bg:#E7C93C; --st-flag-fg:#312B06; --st-flag-bd:#a98f1d;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="light"]{
+    --paper:#EDF1F5; --sheet:#FFFFFF; --ink:#16222E; --muted:#5C6C7B;
+    --line:#9DB1C2; --wall:#3F5162; --road:#DCE4EB; --road-mark:#7C8FA0;
+    --accent:#1F5FBF; --accent-soft:rgba(31,95,191,.10); --grid:rgba(31,95,191,.05);
+    --st-free-bg:#E7EEF5; --st-free-fg:#33465A; --st-free-bd:#B4C4D3;
+    --st-occ-bg:#D5473A; --st-occ-fg:#FFFFFF; --st-occ-bd:#B0362B;
+    --st-res-bg:#E39A2B; --st-res-fg:#3A2A05; --st-res-bd:#C07E15;
+    --st-flag-bg:#F4D33B; --st-flag-fg:#443B06; --st-flag-bd:#D8B61E;
+    --shadow:0 1px 2px rgba(16,34,46,.06),0 8px 24px rgba(16,34,46,.08);
+  }
+  :root[data-theme="dark"]{
+    --paper:#0B121A; --sheet:#101A25; --ink:#E6EEF6; --muted:#8DA0B2;
+    --line:#33485C; --wall:#607588; --road:#182430; --road-mark:#465b6e;
+    --accent:#6AA6FF; --accent-soft:rgba(106,166,255,.14); --grid:rgba(106,166,255,.06);
+    --st-free-bg:#192735; --st-free-fg:#AEC0D2; --st-free-bd:#324a60;
+    --st-occ-bg:#E0574A; --st-occ-fg:#26100C; --st-occ-bd:#9c3a30;
+    --st-res-bg:#E3A43A; --st-res-fg:#2C2005; --st-res-bd:#a5771f;
+    --st-flag-bg:#E7C93C; --st-flag-fg:#312B06; --st-flag-bd:#a98f1d;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.4);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);
+    line-height:1.45;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1360px;margin:0 auto;padding:22px 20px 60px;}
+
+  header.top{display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px 24px;
+    border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:18px;}
+  .brand{display:flex;flex-direction:column;gap:3px;min-width:260px;flex:1;}
+  .eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);
+    font-weight:600;}
+  h1{font-size:clamp(20px,2.4vw,27px);margin:0;font-weight:650;letter-spacing:-.01em;
+    text-wrap:balance;}
+  .sub{font-size:13px;color:var(--muted);}
+  .theme-toggle{border:1px solid var(--line);background:var(--sheet);color:var(--ink);
+    border-radius:8px;padding:8px 12px;font-size:12.5px;cursor:pointer;font-family:var(--font);
+    display:inline-flex;gap:7px;align-items:center;}
+  .theme-toggle:hover{border-color:var(--accent);}
+
+  .note{background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);
+    border-radius:var(--radius);padding:11px 14px;font-size:12.5px;color:var(--ink);
+    margin-bottom:16px;display:flex;gap:9px;align-items:flex-start;}
+  .note b{color:var(--accent);}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;margin-bottom:14px;}
+  .tabs{display:inline-flex;background:var(--sheet);border:1px solid var(--line);border-radius:10px;
+    padding:4px;gap:4px;box-shadow:var(--shadow);}
+  .tab{border:0;background:transparent;color:var(--muted);font-family:var(--font);font-size:13px;
+    font-weight:600;padding:8px 14px;border-radius:7px;cursor:pointer;white-space:nowrap;}
+  .tab[aria-selected="true"]{background:var(--accent);color:#fff;}
+  .tab .cnt{font-family:var(--mono);font-size:11px;opacity:.8;margin-left:6px;}
+
+  .search{position:relative;flex:1;min-width:190px;max-width:280px;}
+  .search input{width:100%;border:1px solid var(--line);background:var(--sheet);color:var(--ink);
+    border-radius:9px;padding:9px 12px 9px 34px;font-size:13px;font-family:var(--font);}
+  .search input:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent);}
+  .search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;
+    stroke:var(--muted);fill:none;}
+
+  .legend{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--sheet);
+    border-radius:20px;padding:6px 12px 6px 8px;font-size:12.5px;cursor:pointer;font-family:var(--font);
+    color:var(--ink);user-select:none;}
+  .chip:hover{border-color:var(--accent);}
+  .chip[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft);}
+  .chip .sw{width:15px;height:15px;border-radius:4px;border:1px solid var(--st-free-bd);}
+  .chip .n{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:18px;text-align:right;
+    font-variant-numeric:tabular-nums;}
+  .sw.free{background:var(--st-free-bg);border-color:var(--st-free-bd);}
+  .sw.occupied{background:var(--st-occ-bg);border-color:var(--st-occ-bd);}
+  .sw.reserved{background:var(--st-res-bg);border-color:var(--st-res-bd);}
+  .sw.flagged{background:var(--st-flag-bg);border-color:var(--st-flag-bd);}
+
+  .brush-hint{font-size:12px;color:var(--muted);}
+  .brush-hint b{color:var(--ink);}
+  .btn{border:1px solid var(--line);background:var(--sheet);color:var(--ink);border-radius:8px;
+    padding:8px 12px;font-size:12.5px;cursor:pointer;font-family:var(--font);}
+  .btn:hover{border-color:var(--accent);}
+
+  .stage{position:relative;background:var(--sheet);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);overflow:hidden;}
+  .scroll{overflow-x:auto;overflow-y:hidden;}
+  .sheetview{display:none;}
+  .sheetview.active{display:block;}
+  svg.plan{display:block;width:100%;min-width:1040px;height:auto;
+    background:
+      linear-gradient(var(--grid) 1px,transparent 1px) 0 0/26px 26px,
+      linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/26px 26px,
+      var(--sheet);}
+
+  /* plan primitives */
+  .wall{fill:none;stroke:var(--wall);stroke-width:5;}
+  .wall-in{fill:none;stroke:var(--wall);stroke-width:2.4;}
+  .road{fill:var(--road);stroke:none;}
+  .road-edge{fill:none;stroke:var(--line);stroke-width:1;}
+  .road-center{fill:none;stroke:var(--road-mark);stroke-width:1.4;stroke-dasharray:9 8;opacity:.8;}
+  .flow{fill:var(--road-mark);opacity:.85;}
+  .spine{fill:var(--wall);opacity:.55;}
+  .hatch-rect{fill:url(#hatch);stroke:var(--wall);stroke-width:1.6;}
+  .room{fill:var(--paper);stroke:var(--wall);stroke-width:1.6;}
+  .lbl{fill:var(--muted);font-family:var(--font);font-size:12px;}
+  .lbl-sm{fill:var(--muted);font-family:var(--font);font-size:10.5px;}
+  .lbl-strong{fill:var(--ink);font-family:var(--font);font-weight:600;}
+  .sec-badge circle{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4;}
+  .sec-badge text{fill:var(--accent);font-weight:700;font-family:var(--font);}
+  .sec-title{fill:var(--muted);font-family:var(--font);font-weight:600;letter-spacing:.08em;
+    text-transform:uppercase;font-size:12px;}
+  .compass circle{fill:none;stroke:var(--line);stroke-width:1.4;}
+  .compass text{fill:var(--muted);font-family:var(--font);font-size:10px;font-weight:600;}
+  .compass path{fill:var(--accent);}
+
+  /* stalls */
+  .stall{cursor:pointer;}
+  .stall rect{stroke-width:1.3;transition:fill .12s ease;}
+  .stall text{font-family:var(--mono);font-size:15px;font-weight:600;pointer-events:none;
+    font-variant-numeric:tabular-nums;}
+  .stall.free rect{fill:var(--st-free-bg);stroke:var(--st-free-bd);}
+  .stall.free text{fill:var(--st-free-fg);}
+  .stall.occupied rect{fill:var(--st-occ-bg);stroke:var(--st-occ-bd);}
+  .stall.occupied text{fill:var(--st-occ-fg);}
+  .stall.reserved rect{fill:var(--st-res-bg);stroke:var(--st-res-bd);}
+  .stall.reserved text{fill:var(--st-res-fg);}
+  .stall.flagged rect{fill:var(--st-flag-bg);stroke:var(--st-flag-bd);}
+  .stall.flagged text{fill:var(--st-flag-fg);}
+  .stall:hover rect{stroke:var(--accent);stroke-width:2.2;}
+  .stall:focus{outline:none;}
+  .stall:focus rect{stroke:var(--accent);stroke-width:2.4;}
+  .stall.found rect{stroke:var(--accent);stroke-width:3;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .stall.found{animation:pulse .7s ease 3;}
+  @media (prefers-reduced-motion:reduce){.stall.found{animation:none;}}
+
+  /* title block stamp */
+  .stamp{position:absolute;right:10px;bottom:10px;background:var(--sheet);border:1.4px solid var(--wall);
+    font-family:var(--font);font-size:10.5px;box-shadow:var(--shadow);max-width:min(46vw,320px);}
+  .stamp .row{display:flex;border-top:1px solid var(--line);}
+  .stamp .row:first-child{border-top:0;}
+  .stamp .k{padding:4px 8px;color:var(--muted);border-right:1px solid var(--line);min-width:74px;
+    text-transform:uppercase;letter-spacing:.05em;font-size:9px;display:flex;align-items:center;}
+  .stamp .v{padding:4px 8px;color:var(--ink);font-weight:600;}
+  @media (max-width:720px){.stamp{display:none;}}
+
+  /* stats footer */
+  .stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;}
+  .stat{background:var(--sheet);border:1px solid var(--line);border-radius:var(--radius);
+    padding:11px 15px;min-width:104px;flex:1;box-shadow:var(--shadow);}
+  .stat .lab{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+    display:flex;align-items:center;gap:6px;}
+  .stat .val{font-family:var(--mono);font-size:23px;font-weight:600;margin-top:3px;
+    font-variant-numeric:tabular-nums;}
+  .stat .dot{width:10px;height:10px;border-radius:3px;}
+
+  .readout{font-family:var(--mono);font-size:12.5px;color:var(--muted);margin-top:10px;
+    min-height:18px;}
+  .readout b{color:var(--ink);}
+  footer.foot{margin-top:26px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--line);
+    padding-top:12px;line-height:1.6;}
+  @media (max-width:640px){
+    .wrap{padding:16px 12px 48px;}
+    .toolbar{gap:10px;}
+  }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <span class="eyebrow">Підземний паркінг · цифрова схема</span>
+      <h1>Житловий комплекс, пр. Правди 31-33 / 31-А</h1>
+      <span class="sub">Подільський р-н, м. Київ · верхній рівень · всього місць: <b id="grandTotal">—</b></span>
+    </div>
+    <button class="theme-toggle" id="themeBtn" type="button">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <span>Тема</span>
+    </button>
+  </header>
+
+  <div class="note">
+    <span>ℹ️</span>
+    <span><b>Чернетка для звірки.</b> Номери та розташування зчитані з фотокопії плану — можливі неточності. Позначте, де виправити (порядок місць, номери, приналежність до секцій), і я оновлю. Клацання по місцю призначає активний статус із легенди.</span>
+  </div>
+
+  <div class="toolbar">
+    <div class="tabs" role="tablist" aria-label="Рівні паркінгу">
+      <button class="tab" role="tab" data-level="AB" aria-selected="true" type="button">Секція А, Б <span class="cnt" id="cntAB"></span></button>
+      <button class="tab" role="tab" data-level="VG" aria-selected="false" type="button">Секція В, Г <span class="cnt" id="cntVG"></span></button>
+    </div>
+    <label class="search">
+      <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="searchBox" type="search" inputmode="numeric" placeholder="Знайти місце за №…" aria-label="Пошук місця за номером">
+    </label>
+  </div>
+
+  <div class="toolbar">
+    <div class="legend" id="legend"></div>
+    <span class="brush-hint">Активний статус: <b id="brushName">Зайняте</b> · клац по місцю — призначити</span>
+    <button class="btn" id="resetBtn" type="button">Скинути рівень</button>
+  </div>
+
+  <div class="stage">
+    <div class="scroll">
+      <div class="sheetview active" id="view-AB"></div>
+      <div class="sheetview" id="view-VG"></div>
+    </div>
+    <div class="stamp" id="stamp"></div>
+  </div>
+
+  <div class="readout" id="readout">Наведіть або клацніть місце, щоб побачити деталі.</div>
+
+  <div class="stats" id="stats"></div>
+
+  <footer class="foot">
+    Схема відтворює планування з двох аркушів: «План підземного паркінгу. Секція А, Б» та «Паркінг… пр. Правди 31-А (Секція В, Г)». Центральний острівець машиномісць, петльовий проїзд, рампи в'їзду/виїзду та службові приміщення показані схематично. Статуси зберігаються локально у вашому браузері.
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- geometry ---------- */
+  var SW=42, SH=74, LEFT=156, WALL=40;
+  var G={};
+  G.yTop=40; G.r1=G.yTop+9;               // 49  top-wall row
+  G.a1=G.r1+SH;                            // 123 top aisle start
+  G.a1h=72;
+  G.r3=G.a1+G.a1h;                         // 195 island-top row
+  G.spine=10;
+  G.r5=G.r3+SH+G.spine;                    // 279 island-bottom row
+  G.a2=G.r5+SH;                            // 353 bottom aisle start
+  G.a2h=72;
+  G.r7=G.a2+G.a2h;                         // 425 bottom-wall row
+  G.yBot=G.r7+SH;                          // 499 bottom wall
+  var VBH=560;
+
+  /* ---------- level data ---------- */
+  var LEVELS={
+    AB:{
+      title:"Секція А, Б", sheet:"План на позн. −1.550 · верхній рівень",
+      rows:[
+        {y:G.r1, from:21, to:44, sec:"Б"},   // top wall
+        {y:G.r3, from:1,  to:20, sec:"Б"},   // island top
+        {y:G.r5, from:70, to:88, sec:"А"},   // island bottom
+        {y:G.r7, from:45, to:69, sec:"А"}    // bottom wall
+      ],
+      secTop:"Б", secBot:"А",
+      flagged:[1,2,3,4,5,15,16,17,18,19,20,21,22,23,24,25,38,39,40,41,42,43,86,87,88],
+      leftRamp:"both", rooms:["ohorona","vodomir","corridor"]
+    },
+    VG:{
+      title:"Секція В, Г", sheet:"пр. Правди 31-А · верхній рівень",
+      rows:[
+        {y:G.r1, from:111, to:133, sec:"В"}, // top wall
+        {y:G.r3, from:89,  to:110, sec:"В"}, // island top (№89 підтверджено замовником 09.07.2026)
+        {y:G.r5, from:160, to:181, sec:"Г"}, // island bottom
+        {y:G.r7, from:134, to:159, sec:"Г"}  // bottom wall
+      ],
+      secTop:"В", secBot:"Г",
+      flagged:[],
+      leftRamp:"split", rooms:[]
+    }
+  };
+
+  var STATUSES=[
+    {key:"free",     label:"Вільне"},
+    {key:"occupied", label:"Зайняте"},
+    {key:"reserved", label:"Заброньоване"},
+    {key:"flagged",  label:"Виділене (жовте на плані)"}
+  ];
+  var STLABEL={}; STATUSES.forEach(function(s){STLABEL[s.key]=s.label;});
+
+  /* ---------- helpers ---------- */
+  function esc(t){return String(t);}
+  function levelSpan(lv){
+    var mn=1e9,mx=-1e9,cnt=0;
+    lv.rows.forEach(function(r){cnt+=(r.to-r.from+1); if(r.from<mn)mn=r.from; if(r.to>mx)mx=r.to;});
+    return {min:mn,max:mx,count:cnt};
+  }
+
+  function buildRows(lv){
+    var svg="",list=[];
+    lv.rows.forEach(function(r){
+      var n=r.to-r.from+1;
+      for(var i=0;i<n;i++){
+        var num=r.from+i, x=LEFT+i*SW;
+        list.push({n:num,sec:r.sec,cx:x+SW/2,cy:r.y+SH/2});
+        svg+='<g class="stall" data-n="'+num+'" data-sec="'+r.sec+'" tabindex="0" role="button" aria-label="Місце '+num+', секція '+r.sec+'">'
+           +'<rect x="'+x+'" y="'+r.y+'" width="'+SW+'" height="'+SH+'" rx="3"></rect>'
+           +'<text x="'+(x+SW/2)+'" y="'+(r.y+SH/2+1)+'" dominant-baseline="middle" text-anchor="middle">'+num+'</text>'
+           +'</g>';
+      }
+    });
+    return {svg:svg,list:list};
+  }
+
+  function rowCount(lv,idx){return lv.rows[idx].to-lv.rows[idx].from+1;}
+
+  function buildRoad(lv){
+    var maxCount=0;
+    lv.rows.forEach(function(r){var c=r.to-r.from+1; if(c>maxCount)maxCount=c;});
+    var rowRight=LEFT+maxCount*SW;
+    var islandCount=Math.max(rowCount(lv,1),rowCount(lv,2));
+    var islandRight=LEFT+islandCount*SW;
+    var roadLeft=LEFT-66, roadRight=rowRight+24;
+    var topY=G.a1, botY=G.a2;                     // road band top edges
+    var s="";
+    // road bands (top aisle, bottom aisle, left & right turnarounds)
+    s+='<rect class="road" x="'+roadLeft+'" y="'+topY+'" width="'+(roadRight-roadLeft)+'" height="'+G.a1h+'"></rect>';
+    s+='<rect class="road" x="'+roadLeft+'" y="'+botY+'" width="'+(roadRight-roadLeft)+'" height="'+G.a2h+'"></rect>';
+    s+='<rect class="road" x="'+roadLeft+'" y="'+topY+'" width="60" height="'+(botY+G.a2h-topY)+'"></rect>';
+    s+='<rect class="road" x="'+(roadRight-60)+'" y="'+topY+'" width="60" height="'+(botY+G.a2h-topY)+'"></rect>';
+    // centreline (rounded rect loop)
+    var cxL=roadLeft+30, cxR=roadRight-30, cyT=topY+G.a1h/2, cyB=botY+G.a2h/2, rr=30;
+    s+='<path class="road-center" d="'
+      +'M '+(cxL+rr)+' '+cyT+' L '+(cxR-rr)+' '+cyT
+      +' A '+rr+' '+rr+' 0 0 1 '+cxR+' '+(cyT+rr)
+      +' L '+cxR+' '+(cyB-rr)
+      +' A '+rr+' '+rr+' 0 0 1 '+(cxR-rr)+' '+cyB
+      +' L '+(cxL+rr)+' '+cyB
+      +' A '+rr+' '+rr+' 0 0 1 '+cxL+' '+(cyB-rr)
+      +' L '+cxL+' '+(cyT+rr)
+      +' A '+rr+' '+rr+' 0 0 1 '+(cxL+rr)+' '+cyT+' Z"></path>';
+    // flow arrows (clockwise): top→right, right→down, bottom→left, left→up
+    function arrow(x,y,dir){
+      var p;
+      if(dir==="r")p=(x)+","+(y-6)+" "+(x+11)+","+y+" "+(x)+","+(y+6);
+      if(dir==="l")p=(x)+","+(y-6)+" "+(x-11)+","+y+" "+(x)+","+(y+6);
+      if(dir==="d")p=(x-6)+","+(y+0)+" "+(x+6)+","+(y+0)+" "+(x)+","+(y+11);
+      if(dir==="u")p=(x-6)+","+(y+0)+" "+(x+6)+","+(y+0)+" "+(x)+","+(y-11);
+      return '<polygon class="flow" points="'+p+'"></polygon>';
+    }
+    s+=arrow((cxL+cxR)/2, cyT, "r");
+    s+=arrow(cxR, (cyT+cyB)/2, "d");
+    s+=arrow((cxL+cxR)/2, cyB, "l");
+    s+=arrow(cxL, (cyT+cyB)/2, "u");
+    // island spine divider
+    s+='<rect class="spine" x="'+LEFT+'" y="'+(G.r3+SH)+'" width="'+(islandRight-LEFT)+'" height="'+G.spine+'"></rect>';
+    return {svg:s, rowRight:rowRight, roadRight:roadRight, islandRight:islandRight};
+  }
+
+  function buildFeatures(lv, geo, vbW){
+    var s="", islandRight=geo.islandRight, roadRight=geo.roadRight;
+    // section titles + badges in the open area right of island
+    var ox=islandRight+(roadRight-islandRight)/2;
+    s+='<g class="sec-badge"><circle cx="'+ox+'" cy="'+ (G.r3+SH/2) +'" r="17"></circle>'
+      +'<text x="'+ox+'" y="'+(G.r3+SH/2+5)+'" text-anchor="middle" font-size="16">'+lv.secTop+'</text></g>';
+    s+='<text class="sec-title" x="'+ox+'" y="'+(G.r3+SH/2+34)+'" text-anchor="middle">Секція '+lv.secTop+'</text>';
+    s+='<g class="sec-badge"><circle cx="'+ox+'" cy="'+ (G.r5+SH/2) +'" r="17"></circle>'
+      +'<text x="'+ox+'" y="'+(G.r5+SH/2+5)+'" text-anchor="middle" font-size="16">'+lv.secBot+'</text></g>';
+    s+='<text class="sec-title" x="'+ox+'" y="'+(G.r5+SH/2+34)+'" text-anchor="middle">Секція '+lv.secBot+'</text>';
+
+    // compass (north-west style)
+    var cx=vbW-46, cy=76;
+    s+='<g class="compass"><circle cx="'+cx+'" cy="'+cy+'" r="18"></circle>'
+      +'<path d="M '+cx+' '+(cy-15)+' L '+(cx-6)+' '+(cy+3)+' L '+cx+' '+(cy-2)+' L '+(cx+6)+' '+(cy+3)+' Z"></path>'
+      +'<text x="'+cx+'" y="'+(cy+16)+'" text-anchor="middle">Пн</text></g>';
+
+    // left-side rooms / ramps
+    if(lv.leftRamp==="both"){
+      // security room
+      s+='<rect class="room" x="14" y="200" width="74" height="150" rx="3"></rect>';
+      s+='<text class="lbl-sm" transform="translate(51,275) rotate(-90)" text-anchor="middle">Кімната охорони</text>';
+      // ramp (below bottom wall, exits building)
+      s+='<polygon class="hatch-rect" points="14,432 150,432 128,540 14,540"></polygon>';
+      s+='<text class="lbl-sm" x="24" y="452">Рампа</text>';
+      s+='<text class="lbl-sm" x="24" y="466">в’їзд / виїзд</text>';
+      s+='<polygon class="flow" points="70,500 82,492 82,498 100,498 100,502 82,502 82,508"></polygon>';
+      // water-meter room (right margin)
+      s+='<rect class="room" x="'+(vbW-56)+'" y="250" width="44" height="150" rx="3"></rect>';
+      s+='<text class="lbl-sm" transform="translate('+(vbW-34)+',325) rotate(-90)" text-anchor="middle">Водомірний вузол</text>';
+      // corridor label
+      s+='<text class="lbl-sm" x="'+(LEFT+8)+'" y="34">Коридор інж. мереж</text>';
+    } else {
+      // two ramps on left: entry (top) and exit (bottom)
+      s+='<polygon class="hatch-rect" points="14,120 120,120 120,210 14,196"></polygon>';
+      s+='<text class="lbl-strong" x="30" y="150" font-size="12">В’їзд</text>';
+      s+='<polygon class="flow" points="96,165 84,157 84,163 66,163 66,167 84,167 84,173"></polygon>';
+      s+='<polygon class="hatch-rect" points="14,338 120,352 120,442 14,442"></polygon>';
+      s+='<text class="lbl-strong" x="30" y="400" font-size="12">Виїзд</text>';
+      s+='<polygon class="flow" points="30,393 42,385 42,391 60,391 60,395 42,395 42,401"></polygon>';
+    }
+    return s;
+  }
+
+  function buildSVG(key){
+    var lv=LEVELS[key];
+    var geo=buildRoad(lv);
+    var vbW=Math.max(1300, geo.roadRight+56);
+    var rows=buildRows(lv);
+    var walls='<rect class="wall" x="6" y="'+(G.yTop-6)+'" width="'+(vbW-12)+'" height="'+(G.yBot+18-(G.yTop-6))+'" rx="4"></rect>';
+    var defs='<defs><pattern id="hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">'
+      +'<line x1="0" y1="0" x2="0" y2="7" stroke="var(--road-mark)" stroke-width="1.4"></line></pattern></defs>';
+    var svg='<svg class="plan" viewBox="0 0 '+vbW+' '+VBH+'" preserveAspectRatio="xMidYMid meet" role="img" aria-label="План паркінгу, '+lv.title+'">'
+      +defs+walls+geo.svg+buildFeatures(lv,geo,vbW)+rows.svg+'</svg>';
+    return {svg:svg, list:rows.list};
+  }
+
+  /* ---------- state ---------- */
+  var KEY="pravdy_parking_v2";
+  var STATE={AB:{},VG:{}};
+  try{
+    var raw=localStorage.getItem(KEY);
+    if(raw){var o=JSON.parse(raw); if(o&&o.AB&&o.VG)STATE=o;}
+  }catch(e){}
+  var firstRun=!STATE.AB || Object.keys(STATE.AB).length===0;
+  if(firstRun){
+    LEVELS.AB.flagged.forEach(function(n){STATE.AB[n]="flagged";});
+  }
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(STATE));}catch(e){}}
+
+  var current="AB", brush="occupied";
+  var META={}, LISTS={};
+
+  function statusOf(lvl,n){return STATE[lvl][n]||"free";}
+
+  function applyClasses(lvl){
+    var view=document.getElementById("view-"+lvl);
+    var g=view.querySelectorAll(".stall");
+    g.forEach(function(el){
+      var n=el.getAttribute("data-n");
+      var st=statusOf(lvl,n);
+      el.classList.remove("free","occupied","reserved","flagged");
+      el.classList.add(st);
+    });
+  }
+
+  function renderLevel(lvl){
+    var built=buildSVG(lvl);
+    var view=document.getElementById("view-"+lvl);
+    view.innerHTML=built.svg;
+    LISTS[lvl]=built.list;
+    // wire stalls
+    view.querySelectorAll(".stall").forEach(function(el){
+      el.addEventListener("click",function(){paint(lvl,el);});
+      el.addEventListener("keydown",function(ev){
+        if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();paint(lvl,el);}
+      });
+      el.addEventListener("mouseenter",function(){readout(lvl,el);});
+      el.addEventListener("focus",function(){readout(lvl,el);});
+    });
+    applyClasses(lvl);
+  }
+
+  function paint(lvl,el){
+    var n=el.getAttribute("data-n");
+    var cur=statusOf(lvl,n);
+    var next;
+    if(brush==="free"){next="free";}
+    else if(cur===brush){next="free";}   // toggle off
+    else{next=brush;}
+    if(next==="free"){delete STATE[lvl][n];}
+    else{STATE[lvl][n]=next;}
+    el.classList.remove("free","occupied","reserved","flagged");
+    el.classList.add(next);
+    save();updateStats();readout(lvl,el);
+  }
+
+  function readout(lvl,el){
+    var n=el.getAttribute("data-n"), sec=el.getAttribute("data-sec"), st=statusOf(lvl,n);
+    document.getElementById("readout").innerHTML=
+      "Місце <b>№"+n+"</b> · секція <b>"+sec+"</b> · статус: <b>"+STLABEL[st]+"</b>";
+  }
+
+  /* ---------- legend ---------- */
+  function buildLegend(){
+    var box=document.getElementById("legend");
+    box.innerHTML="";
+    STATUSES.forEach(function(s){
+      var b=document.createElement("button");
+      b.className="chip";b.type="button";
+      b.setAttribute("aria-pressed", s.key===brush?"true":"false");
+      b.setAttribute("data-key",s.key);
+      b.innerHTML='<span class="sw '+s.key+'"></span>'+s.label+' <span class="n" data-cnt="'+s.key+'">0</span>';
+      b.addEventListener("click",function(){
+        brush=s.key;
+        document.getElementById("brushName").textContent=s.label;
+        box.querySelectorAll(".chip").forEach(function(c){
+          c.setAttribute("aria-pressed", c.getAttribute("data-key")===brush?"true":"false");
+        });
+      });
+      box.appendChild(b);
+    });
+  }
+
+  /* ---------- stats ---------- */
+  function counts(lvl){
+    var c={free:0,occupied:0,reserved:0,flagged:0,total:0};
+    (LISTS[lvl]||[]).forEach(function(s){c.total++;c[statusOf(lvl,s.n)]++;});
+    return c;
+  }
+  function updateStats(){
+    var c=counts(current);
+    var box=document.getElementById("stats");
+    var defs=[
+      {k:"total",lab:"Всього місць",cls:""},
+      {k:"free",lab:"Вільні",cls:"free"},
+      {k:"occupied",lab:"Зайняті",cls:"occupied"},
+      {k:"reserved",lab:"Заброньовані",cls:"reserved"},
+      {k:"flagged",lab:"Виділені",cls:"flagged"}
+    ];
+    box.innerHTML=defs.map(function(d){
+      var dot=d.cls?'<span class="dot sw '+d.cls+'"></span>':'';
+      return '<div class="stat"><div class="lab">'+dot+d.lab+'</div><div class="val">'+c[d.k]+'</div></div>';
+    }).join("");
+    // legend counts (current level)
+    document.querySelectorAll('[data-cnt]').forEach(function(el){
+      el.textContent=c[el.getAttribute("data-cnt")];
+    });
+  }
+
+  /* ---------- tabs ---------- */
+  function switchTo(lvl){
+    current=lvl;
+    document.querySelectorAll(".tab").forEach(function(t){
+      t.setAttribute("aria-selected", t.getAttribute("data-level")===lvl?"true":"false");
+    });
+    document.querySelectorAll(".sheetview").forEach(function(v){v.classList.remove("active");});
+    document.getElementById("view-"+lvl).classList.add("active");
+    buildStamp(lvl);
+    updateStats();
+  }
+
+  function buildStamp(lvl){
+    var lv=LEVELS[lvl];
+    document.getElementById("stamp").innerHTML=
+      '<div class="row"><div class="k">Об’єкт</div><div class="v">Житловий будинок з підземним паркінгом</div></div>'
+     +'<div class="row"><div class="k">Адреса</div><div class="v">пр. Правди 31-33 / 31-А, Київ</div></div>'
+     +'<div class="row"><div class="k">Аркуш</div><div class="v">'+lv.title+' · '+lv.sheet+'</div></div>'
+     +'<div class="row"><div class="k">Проєкт</div><div class="v">АТ «Київпроект»</div></div>';
+  }
+
+  /* ---------- search ---------- */
+  function doSearch(q){
+    q=(q||"").trim();
+    if(!q)return;
+    var num=parseInt(q,10);
+    if(isNaN(num))return;
+    var target=null;
+    ["AB","VG"].forEach(function(lvl){
+      (LISTS[lvl]||[]).forEach(function(s){if(s.n===num)target=lvl;});
+    });
+    if(!target){
+      document.getElementById("readout").innerHTML="Місце <b>№"+num+"</b> не знайдено на схемі.";
+      return;
+    }
+    if(target!==current)switchTo(target);
+    var view=document.getElementById("view-"+target);
+    var el=view.querySelector('.stall[data-n="'+num+'"]');
+    if(!el)return;
+    view.querySelectorAll(".stall.found").forEach(function(x){x.classList.remove("found");});
+    el.classList.add("found");
+    // scroll into horizontal view
+    var svg=view.querySelector("svg.plan");
+    var scroller=document.querySelector(".scroll");
+    var rect=el.getBoundingClientRect(), srect=scroller.getBoundingClientRect();
+    scroller.scrollLeft += (rect.left - srect.left) - scroller.clientWidth/2 + rect.width/2;
+    readout(target,el);
+    setTimeout(function(){el.classList.remove("found");},2200);
+  }
+
+  /* ---------- theme ---------- */
+  document.getElementById("themeBtn").addEventListener("click",function(){
+    var cur=document.documentElement.getAttribute("data-theme");
+    var isDark=cur? cur==="dark" : window.matchMedia("(prefers-color-scheme:dark)").matches;
+    document.documentElement.setAttribute("data-theme", isDark?"light":"dark");
+  });
+
+  /* ---------- init ---------- */
+  renderLevel("AB");
+  renderLevel("VG");
+  buildLegend();
+  buildStamp("AB");
+  document.getElementById("brushName").textContent="Зайняте";
+
+  var spanAB=levelSpan(LEVELS.AB), spanVG=levelSpan(LEVELS.VG);
+  document.getElementById("cntAB").textContent="№"+spanAB.min+"–"+spanAB.max;
+  document.getElementById("cntVG").textContent="№"+spanVG.min+"–"+spanVG.max;
+  document.getElementById("grandTotal").textContent=(spanAB.count+spanVG.count);
+
+  document.querySelectorAll(".tab").forEach(function(t){
+    t.addEventListener("click",function(){switchTo(t.getAttribute("data-level"));});
+  });
+  document.getElementById("resetBtn").addEventListener("click",function(){
+    if(!confirm("Скинути всі статуси на рівні «"+LEVELS[current].title+"»?"))return;
+    STATE[current]={};save();applyClasses(current);updateStats();
+  });
+  var sb=document.getElementById("searchBox");
+  sb.addEventListener("keydown",function(e){if(e.key==="Enter")doSearch(sb.value);});
+  sb.addEventListener("input",function(){if(sb.value.trim().length>=1)doSearch(sb.value);});
+
+  switchTo("AB");
+  updateStats();
+})();
+</script>

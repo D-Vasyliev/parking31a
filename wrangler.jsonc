@@ -1,0 +1,35 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "parking31a",
+  "main": "./src/worker/index.ts",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Static Assets (SPA). Директорію білду інжектить @cloudflare/vite-plugin —
+  // тут лише прив'язка та SPA-fallback на index.html.
+  "assets": {
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "parking-db",
+      // Замінити реальним id після `wrangler d1 create parking-db` (етап 7).
+      // Для локальної розробки (--local) id не використовується.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "./migrations"
+    }
+  ],
+
+  "r2_buckets": [
+    { "binding": "BACKUPS", "bucket_name": "parking31a-backups" }
+  ],
+
+  // Щоніч ~03:00 за Києвом: експорт D1 → R2 (реалізація на етапі 6).
+  "triggers": { "crons": ["0 1 * * *"] },
+
+  "observability": { "enabled": true },
+  "vars": { "APP_ENV": "production" }
+}

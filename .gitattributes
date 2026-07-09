@@ -1,0 +1,9 @@
+# Нормалізація: у репозиторії — LF для всіх текстових файлів.
+* text=auto eol=lf
+
+# Бінарні
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary

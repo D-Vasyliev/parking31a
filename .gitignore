@@ -1,0 +1,24 @@
+# deps & build
+node_modules/
+dist/
+.wrangler/
+*.tsbuildinfo
+
+# generated types (via `npm run cf-typegen`)
+worker-configuration.d.ts
+
+# local secrets & env
+.dev.vars
+.dev.vars.local
+*.local
+
+# local D1 / state
+.mf/
+
+# editor / OS
+.claude/settings.local.json
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
