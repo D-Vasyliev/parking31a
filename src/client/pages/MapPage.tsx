@@ -28,13 +28,20 @@ export function MapPage() {
     return m;
   }, [spots]);
 
-  const selected = number ? Number(number) : null;
+  const parsedNum = number ? Number(number) : null;
+  const selected = parsedNum != null && Number.isInteger(parsedNum) ? parsedNum : null;
   useEffect(() => {
     if (selected != null) {
       const s = byNumber.get(selected);
       if (s) setLevel(s.sheet === 1 ? "AB" : "VG");
     }
   }, [selected, byNumber]);
+
+  useEffect(() => {
+    if (highlight == null) return;
+    const t = setTimeout(() => setHighlight(null), 2200);
+    return () => clearTimeout(t);
+  }, [highlight]);
 
   const levelSpots = useMemo(() => spots.filter((s) => (level === "AB" ? s.sheet === 1 : s.sheet === 2)), [spots, level]);
   const occupied = levelSpots.filter((s) => s.occupied).length;

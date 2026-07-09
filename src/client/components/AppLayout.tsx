@@ -1,9 +1,16 @@
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
 
 export function AppLayout() {
   const { user, logout } = useAuth();
   const nav = useNavigate();
+  const [offline, setOffline] = useState(false);
+  useEffect(() => {
+    const h = () => setOffline(true);
+    window.addEventListener("api-offline", h);
+    return () => window.removeEventListener("api-offline", h);
+  }, []);
   async function onLogout() {
     await logout();
     nav("/login", { replace: true });
@@ -11,6 +18,17 @@ export function AppLayout() {
   const navClass = ({ isActive }: { isActive: boolean }) => "app-nav-item" + (isActive ? " active" : "");
   return (
     <div className="app">
+      {offline ? (
+        <div className="offline-banner" role="alert">
+          Немає з'єднання — зміни могли не зберегтися.
+          <button className="btn btn-sm" onClick={() => location.reload()}>
+            Повторити
+          </button>
+          <button className="btn-link" onClick={() => setOffline(false)}>
+            Сховати
+          </button>
+        </div>
+      ) : null}
       <header className="app-bar">
         <div className="app-brand">
           <span className="eyebrow">Паркінг Правди 31</span>

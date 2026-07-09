@@ -17,7 +17,8 @@ export async function api<T = unknown>(method: string, path: string, body?: unkn
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch {
-    return { ok: false, status: 0, data: null, error: { code: "network", message: "Немає з'єднання з сервером" } };
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("api-offline"));
+    return { ok: false, status: 0, data: null, error: { code: "network", message: "Немає з'єднання — зміни не збережено" } };
   }
   let json: unknown = null;
   try {

@@ -88,8 +88,10 @@ async function main() {
   ok(r.status === 200 && r.json.plate === "AA1234BB" && r.json.carMake === "Toyota", "оновлено дані авто");
 
   console.log("\n[coowner]");
+  r = await req("POST", "/api/spots/50/coowner", { fullName: "Без основного" });
+  ok(r.status === 409, "співвласник без основного власника → 409");
   r = await req("POST", "/api/spots/42/coowner", { fullName: "Петренко Петро" });
-  ok(r.status === 200 && r.json.owners.length === 2, "додано співвласника");
+  ok(r.status === 200 && r.json.owners.length === 2, "додано співвласника (за наявності основного)");
 
   console.log("\n[notes]");
   r = await req("POST", "/api/spots/42/notes", { body: "Ключ у охорони" });
@@ -107,7 +109,10 @@ async function main() {
   console.log("\n[change owner → history]");
   r = await req("PUT", "/api/spots/42/owner", { fullName: "Сидоренко Сидір", phone: "+380509998877" });
   ok(r.status === 200 && r.json.owners.find((o) => o.isPrimary).fullName === "Сидоренко Сидір", "змінено власника");
-  ok(r.json.history.length >= 2, "історія містить попереднього власника");
+  ok(
+    r.json.history.some((h) => h.fullName === "Іваненко Іван" && h.endedAt) && r.json.history.every((h) => h.endedAt),
+    "історія містить лише завершених (Іваненко Іван)",
+  );
 
   console.log("\n[owners directory]");
   r = await req("GET", "/api/owners");

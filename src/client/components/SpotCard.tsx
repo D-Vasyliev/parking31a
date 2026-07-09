@@ -1,5 +1,7 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { apiGet, apiPost, apiPut, apiPatch, apiDelete } from "../api";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
+import { apiGet, apiPost, apiPut, apiPatch, apiDelete, type ApiResult } from "../api";
+import { formatDate } from "../format";
 import type { SpotDetail, SpotOwnerView } from "../../shared/api";
 
 interface Props {
@@ -9,7 +11,6 @@ interface Props {
 }
 
 type OwnerMode = null | { kind: "change" | "coowner" | "fix"; ownerId?: number };
-
 interface OwnerFields {
   fullName: string;
   phone: string;
@@ -20,6 +21,7 @@ interface OwnerFields {
 const EMPTY: OwnerFields = { fullName: "", phone: "", phone2: "", email: "", comment: "" };
 
 export function SpotCard({ number, onClose, onChanged }: Props) {
+  const [status, setStatus] = useState<"loading" | "ok" | "notfound">("loading");
   const [d, setD] = useState<SpotDetail | null>(null);
   const [carEdit, setCarEdit] = useState(false);
   const [car, setCar] = useState({ plate: "", carMake: "", carModel: "" });
@@ -28,95 +30,100 @@ export function SpotCard({ number, onClose, onChanged }: Props) {
   const [note, setNote] = useState("");
   const [editNote, setEditNote] = useState<{ id: number; body: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
 
   async function load() {
     const r = await apiGet<SpotDetail>(`/api/spots/${number}`);
     if (r.ok && r.data) {
       setD(r.data);
       setCar({ plate: r.data.plate ?? "", carMake: r.data.carMake ?? "", carModel: r.data.carModel ?? "" });
+      setStatus("ok");
+    } else if (r.status === 404) {
+      setStatus("notfound");
+    } else if (!d) {
+      setErr(r.error?.message ?? "Помилка завантаження");
     }
   }
   useEffect(() => {
     setCarEdit(false);
     setOwnerMode(null);
+    setErr(null);
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [number]);
 
+  // фокус у drawer + повернення фокуса на закритті
   useEffect(() => {
+    const prev = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
     const onEsc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onEsc);
-    return () => window.removeEventListener("keydown", onEsc);
+    return () => {
+      window.removeEventListener("keydown", onEsc);
+      prev?.focus?.();
+    };
   }, [onClose]);
 
-  async function saveCar(e: FormEvent) {
-    e.preventDefault();
+  /** Виконати мутацію: показати помилку при невдачі, інакше — after()+reload. */
+  async function mutate(p: Promise<ApiResult<unknown>>, after?: () => void): Promise<void> {
+    setErr(null);
     setBusy(true);
-    await apiPatch(`/api/spots/${number}`, { plate: car.plate || null, carMake: car.carMake || null, carModel: car.carModel || null });
+    const r = await p;
     setBusy(false);
-    setCarEdit(false);
+    if (!r.ok) {
+      setErr(r.error?.message ?? "Помилка");
+      return;
+    }
+    after?.();
     await load();
     onChanged();
   }
 
   function openOwner(mode: OwnerMode, o?: SpotOwnerView) {
+    setErr(null);
     setOwnerMode(mode);
-    setOf(o ? { fullName: o.fullName, phone: o.phone ?? "", phone2: o.phone2 ?? "", email: o.email ?? "", comment: "" } : EMPTY);
+    setOf(o ? { fullName: o.fullName, phone: o.phone ?? "", phone2: o.phone2 ?? "", email: o.email ?? "", comment: o.comment ?? "" } : EMPTY);
+  }
+
+  async function saveCar(e: FormEvent) {
+    e.preventDefault();
+    await mutate(apiPatch(`/api/spots/${number}`, { plate: car.plate || null, carMake: car.carMake || null, carModel: car.carModel || null }), () => setCarEdit(false));
   }
 
   async function submitOwner(e: FormEvent) {
     e.preventDefault();
     if (!ownerMode || !of.fullName.trim()) return;
-    setBusy(true);
     const payload = { fullName: of.fullName.trim(), phone: of.phone || null, phone2: of.phone2 || null, email: of.email || null, comment: of.comment || null };
-    if (ownerMode.kind === "change") await apiPut(`/api/spots/${number}/owner`, payload);
-    else if (ownerMode.kind === "coowner") await apiPost(`/api/spots/${number}/coowner`, payload);
-    else if (ownerMode.kind === "fix" && ownerMode.ownerId) await apiPatch(`/api/owners/${ownerMode.ownerId}`, payload);
-    setBusy(false);
-    setOwnerMode(null);
-    await load();
-    onChanged();
+    const p =
+      ownerMode.kind === "change"
+        ? apiPut(`/api/spots/${number}/owner`, payload)
+        : ownerMode.kind === "coowner"
+          ? apiPost(`/api/spots/${number}/coowner`, payload)
+          : apiPatch(`/api/owners/${ownerMode.ownerId}`, payload);
+    await mutate(p, () => setOwnerMode(null));
   }
 
   async function clearSpot() {
     if (!confirm(`Очистити місце №${number}? Дані власника буде знято (нотатки збережуться).`)) return;
-    setBusy(true);
-    await apiDelete(`/api/spots/${number}/owners`);
-    setBusy(false);
-    await load();
-    onChanged();
+    await mutate(apiDelete(`/api/spots/${number}/owners`));
   }
   async function removeOwner(ownerId: number) {
-    setBusy(true);
-    await apiDelete(`/api/spots/${number}/owner/${ownerId}`);
-    setBusy(false);
-    await load();
-    onChanged();
+    if (!confirm("Прибрати цього власника з місця?")) return;
+    await mutate(apiDelete(`/api/spots/${number}/owner/${ownerId}`));
   }
-
   async function addNote(e: FormEvent) {
     e.preventDefault();
     if (!note.trim()) return;
-    setBusy(true);
-    await apiPost(`/api/spots/${number}/notes`, { body: note.trim() });
-    setBusy(false);
-    setNote("");
-    await load();
+    await mutate(apiPost(`/api/spots/${number}/notes`, { body: note.trim() }), () => setNote(""));
   }
   async function saveNoteEdit() {
     if (!editNote) return;
-    setBusy(true);
-    await apiPatch(`/api/notes/${editNote.id}`, { body: editNote.body });
-    setBusy(false);
-    setEditNote(null);
-    await load();
+    await mutate(apiPatch(`/api/notes/${editNote.id}`, { body: editNote.body }), () => setEditNote(null));
   }
   async function delNote(id: number) {
     if (!confirm("Видалити нотатку?")) return;
-    setBusy(true);
-    await apiDelete(`/api/notes/${id}`);
-    setBusy(false);
-    await load();
+    await mutate(apiDelete(`/api/notes/${id}`));
   }
 
   const primary = d?.owners.find((o) => o.isPrimary) ?? null;
@@ -125,24 +132,31 @@ export function SpotCard({ number, onClose, onChanged }: Props) {
   return (
     <>
       <div className="drawer-scrim" onClick={onClose} />
-      <aside className="drawer" role="dialog" aria-label={`Місце №${number}`}>
+      <aside className="drawer" role="dialog" aria-modal="true" aria-label={`Місце №${number}`}>
         <div className="drawer-head">
           <div>
             <h2>Місце №{number}</h2>
-            {d ? (
+            {status === "ok" && d ? (
               <span className="chip">
                 Секція {d.section} · {primary ? "Зайняте" : "Вільне"}
               </span>
             ) : null}
           </div>
-          <button className="icon-btn" onClick={onClose} aria-label="Закрити">
+          <button ref={closeRef} className="icon-btn" onClick={onClose} aria-label="Закрити">
             ✕
           </button>
         </div>
 
-        {!d ? (
-          <p className="sub">Завантаження…</p>
-        ) : (
+        {err ? <p className="drawer-error" role="alert">{err}</p> : null}
+
+        {status === "loading" ? (
+          <p className="sub" style={{ padding: "0 20px" }}>Завантаження…</p>
+        ) : status === "notfound" ? (
+          <div className="drawer-body">
+            <p className="sub">Місце №{number} не знайдено.</p>
+            <button className="btn" onClick={onClose}>Закрити</button>
+          </div>
+        ) : d ? (
           <div className="drawer-body">
             {/* Авто */}
             <section className="card-sec">
@@ -169,12 +183,8 @@ export function SpotCard({ number, onClose, onChanged }: Props) {
                     <input value={car.carModel} onChange={(e) => setCar({ ...car, carModel: e.target.value })} />
                   </label>
                   <div className="row-actions">
-                    <button className="btn btn-primary btn-sm" disabled={busy}>
-                      Зберегти
-                    </button>
-                    <button type="button" className="btn btn-sm" onClick={() => setCarEdit(false)}>
-                      Скасувати
-                    </button>
+                    <button className="btn btn-primary btn-sm" disabled={busy}>Зберегти</button>
+                    <button type="button" className="btn btn-sm" onClick={() => setCarEdit(false)} disabled={busy}>Скасувати</button>
                   </div>
                 </form>
               ) : (
@@ -195,7 +205,9 @@ export function SpotCard({ number, onClose, onChanged }: Props) {
               {primary ? (
                 <div className="owner-block">
                   <div className="owner-line">
-                    <strong>{primary.fullName}</strong>
+                    <Link className="owner-name" to={`/owners/${primary.ownerId}`}>
+                      {primary.fullName}
+                    </Link>
                     <div className="owner-acts">
                       <button className="btn-link" onClick={() => openOwner({ kind: "fix", ownerId: primary.ownerId }, primary)}>
                         Виправити
@@ -205,11 +217,7 @@ export function SpotCard({ number, onClose, onChanged }: Props) {
                       </button>
                     </div>
                   </div>
-                  {primary.phone ? (
-                    <a className="tel" href={`tel:${primary.phone}`}>
-                      {primary.phone}
-                    </a>
-                  ) : null}
+                  {primary.phone ? <a className="tel" href={`tel:${primary.phone}`}>{primary.phone}</a> : null}
                   {primary.email ? <div className="muted-line">{primary.email}</div> : null}
                 </div>
               ) : (
@@ -222,15 +230,11 @@ export function SpotCard({ number, onClose, onChanged }: Props) {
                     <span>
                       <em>Співвласник:</em> {co.fullName}
                     </span>
-                    <button className="btn-link danger" onClick={() => removeOwner(co.ownerId)}>
+                    <button className="btn-link danger" onClick={() => removeOwner(co.ownerId)} disabled={busy}>
                       прибрати
                     </button>
                   </div>
-                  {co.phone ? (
-                    <a className="tel" href={`tel:${co.phone}`}>
-                      {co.phone}
-                    </a>
-                  ) : null}
+                  {co.phone ? <a className="tel" href={`tel:${co.phone}`}>{co.phone}</a> : null}
                 </div>
               ))}
 
@@ -248,16 +252,20 @@ export function SpotCard({ number, onClose, onChanged }: Props) {
                     <input value={of.phone} onChange={(e) => setOf({ ...of, phone: e.target.value })} inputMode="tel" />
                   </label>
                   <label className="field">
+                    <span>Додатковий телефон</span>
+                    <input value={of.phone2} onChange={(e) => setOf({ ...of, phone2: e.target.value })} inputMode="tel" />
+                  </label>
+                  <label className="field">
                     <span>Email</span>
                     <input value={of.email} onChange={(e) => setOf({ ...of, email: e.target.value })} />
                   </label>
+                  <label className="field">
+                    <span>Примітка</span>
+                    <input value={of.comment} onChange={(e) => setOf({ ...of, comment: e.target.value })} />
+                  </label>
                   <div className="row-actions">
-                    <button className="btn btn-primary btn-sm" disabled={busy}>
-                      Зберегти
-                    </button>
-                    <button type="button" className="btn btn-sm" onClick={() => setOwnerMode(null)}>
-                      Скасувати
-                    </button>
+                    <button className="btn btn-primary btn-sm" disabled={busy}>Зберегти</button>
+                    <button type="button" className="btn btn-sm" onClick={() => setOwnerMode(null)} disabled={busy}>Скасувати</button>
                   </div>
                 </form>
               ) : (
@@ -266,29 +274,30 @@ export function SpotCard({ number, onClose, onChanged }: Props) {
                     <button className="btn btn-sm" onClick={() => openOwner({ kind: "change" })}>
                       Додати власника
                     </button>
-                  ) : null}
-                  <button className="btn btn-sm" onClick={() => openOwner({ kind: "coowner" })}>
-                    + Співвласник
-                  </button>
-                  {primary ? (
-                    <button className="btn btn-sm danger" onClick={clearSpot}>
-                      Очистити місце
-                    </button>
-                  ) : null}
+                  ) : (
+                    <>
+                      <button className="btn btn-sm" onClick={() => openOwner({ kind: "coowner" })}>
+                        + Співвласник
+                      </button>
+                      <button className="btn btn-sm danger" onClick={clearSpot} disabled={busy}>
+                        Очистити місце
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </section>
 
-            {/* Історія власників */}
-            {d.history.length > 1 ? (
+            {/* Історія власників (лише минулі) */}
+            {d.history.length > 0 ? (
               <section className="card-sec">
                 <div className="sec-head">
                   <h3>Історія власників</h3>
                 </div>
                 <ul className="history">
                   {d.history.map((h, i) => (
-                    <li key={i} className={h.endedAt ? "past" : ""}>
-                      {h.fullName} {!h.isPrimary ? "(співвл.)" : ""} · {h.startedAt} — {h.endedAt ?? "чинний"}
+                    <li key={i} className="past">
+                      {h.fullName} {!h.isPrimary ? "(співвл.)" : ""} · {formatDate(h.startedAt)} — {formatDate(h.endedAt)}
                     </li>
                   ))}
                 </ul>
@@ -301,23 +310,17 @@ export function SpotCard({ number, onClose, onChanged }: Props) {
                 <h3>Нотатки</h3>
               </div>
               <form className="note-add" onSubmit={addNote}>
-                <input placeholder="Додати нотатку…" value={note} onChange={(e) => setNote(e.target.value)} />
-                <button className="btn btn-sm" disabled={busy || !note.trim()}>
-                  Додати
-                </button>
+                <input aria-label="Нова нотатка" placeholder="Додати нотатку…" value={note} onChange={(e) => setNote(e.target.value)} />
+                <button className="btn btn-sm" disabled={busy || !note.trim()}>Додати</button>
               </form>
               <ul className="notes">
                 {d.notes.map((n) => (
                   <li key={n.id} className={n.kind === "project_auto" ? "auto" : ""}>
                     {editNote?.id === n.id ? (
                       <div className="note-edit">
-                        <input value={editNote.body} onChange={(e) => setEditNote({ id: n.id, body: e.target.value })} />
-                        <button className="btn-link" onClick={saveNoteEdit}>
-                          зберегти
-                        </button>
-                        <button className="btn-link" onClick={() => setEditNote(null)}>
-                          скасувати
-                        </button>
+                        <input aria-label="Текст нотатки" value={editNote.body} onChange={(e) => setEditNote({ id: n.id, body: e.target.value })} />
+                        <button className="btn-link" onClick={saveNoteEdit} disabled={busy}>зберегти</button>
+                        <button className="btn-link" onClick={() => setEditNote(null)}>скасувати</button>
                       </div>
                     ) : (
                       <>
@@ -327,17 +330,13 @@ export function SpotCard({ number, onClose, onChanged }: Props) {
                         </div>
                         <div className="note-meta">
                           <span>
-                            {n.createdAt.slice(0, 10)}
+                            {formatDate(n.createdAt)}
                             {n.createdByEmail ? ` · ${n.createdByEmail}` : ""}
                           </span>
                           {n.kind === "manual" ? (
                             <span className="note-acts">
-                              <button className="btn-link" onClick={() => setEditNote({ id: n.id, body: n.body })}>
-                                ред.
-                              </button>
-                              <button className="btn-link danger" onClick={() => delNote(n.id)}>
-                                видалити
-                              </button>
+                              <button className="btn-link" onClick={() => setEditNote({ id: n.id, body: n.body })}>ред.</button>
+                              <button className="btn-link danger" onClick={() => delNote(n.id)} disabled={busy}>видалити</button>
                             </span>
                           ) : null}
                         </div>
@@ -349,7 +348,7 @@ export function SpotCard({ number, onClose, onChanged }: Props) {
               </ul>
             </section>
           </div>
-        )}
+        ) : null}
       </aside>
     </>
   );

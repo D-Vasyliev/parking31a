@@ -6,9 +6,11 @@ import type { OwnerDetail as OD } from "../../shared/api";
 export function OwnerDetail() {
   const { id } = useParams();
   const [o, setO] = useState<OD | null>(null);
+  const [status, setStatus] = useState<"loading" | "ok" | "notfound">("loading");
   const [edit, setEdit] = useState(false);
   const [f, setF] = useState({ fullName: "", phone: "", phone2: "", email: "", comment: "" });
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   async function load() {
     const r = await apiGet<OD>(`/api/owners/${id}`);
@@ -21,6 +23,9 @@ export function OwnerDetail() {
         email: r.data.email ?? "",
         comment: r.data.comment ?? "",
       });
+      setStatus("ok");
+    } else if (r.status === 404) {
+      setStatus("notfound");
     }
   }
   useEffect(() => {
@@ -31,7 +36,8 @@ export function OwnerDetail() {
   async function save(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
-    await apiPatch(`/api/owners/${id}`, {
+    setErr(null);
+    const r = await apiPatch(`/api/owners/${id}`, {
       fullName: f.fullName,
       phone: f.phone || null,
       phone2: f.phone2 || null,
@@ -39,11 +45,16 @@ export function OwnerDetail() {
       comment: f.comment || null,
     });
     setBusy(false);
+    if (!r.ok) {
+      setErr(r.error?.message ?? "Помилка збереження");
+      return;
+    }
     setEdit(false);
     await load();
   }
 
-  if (!o) return <div className="page"><p className="sub">Завантаження…</p></div>;
+  if (status === "loading") return <div className="page"><p className="sub">Завантаження…</p></div>;
+  if (status === "notfound" || !o) return <div className="page"><p className="sub">Власника не знайдено.</p></div>;
 
   return (
     <div className="page narrow">
@@ -78,6 +89,7 @@ export function OwnerDetail() {
             <span>Примітка</span>
             <input value={f.comment} onChange={(e) => setF({ ...f, comment: e.target.value })} />
           </label>
+          {err ? <p className="form-error">{err}</p> : null}
           <div className="row-actions">
             <button className="btn btn-primary btn-sm" disabled={busy}>
               Зберегти

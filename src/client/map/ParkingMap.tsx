@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { layout, type LevelKey } from "./geometry";
 import type { SpotSummary } from "../../shared/api";
 
@@ -12,6 +12,11 @@ interface Props {
 
 export function ParkingMap({ level, occupancy, selected, highlight, onSelect }: Props) {
   const lay = useMemo(() => layout(level), [level]);
+  const targetN = highlight ?? selected;
+  const targetRef = useRef<SVGGElement>(null);
+  useEffect(() => {
+    targetRef.current?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+  }, [targetN, level]);
 
   return (
     <div className="map-scroll">
@@ -40,6 +45,7 @@ export function ParkingMap({ level, occupancy, selected, highlight, onSelect }: 
           return (
             <g
               key={s.n}
+              ref={targetN === s.n ? targetRef : undefined}
               className={cls}
               transform={`translate(${s.x},${s.y})`}
               tabIndex={0}

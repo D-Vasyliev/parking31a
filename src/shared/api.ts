@@ -83,6 +83,7 @@ export interface SpotOwnerView {
   phone: string | null;
   phone2: string | null;
   email: string | null;
+  comment: string | null;
   isPrimary: boolean;
   startedAt: string;
 }

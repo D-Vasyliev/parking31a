@@ -23,7 +23,7 @@ export function Owners() {
     <div className="page">
       <div className="page-head">
         <h1>Власники</h1>
-        <input className="map-search" placeholder="Пошук за ПІП або телефоном…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input className="map-search" aria-label="Пошук власника" placeholder="Пошук за ПІП або телефоном…" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
       <div className="table-wrap">
         <table className="table">
