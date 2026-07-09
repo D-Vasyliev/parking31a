@@ -84,6 +84,8 @@ async function main() {
   console.log("\n[оплати]");
   r = await req("POST", `/api/projects/${id}/payments`, { numbers: [1, 2, 3], paymentMethod: "cash" });
   ok(r.status === 200 && part(r.json, 1).status === "paid" && r.json.collectedKop === 3 * 33367, "оплачено 3 місця, зібрано 3×333,67");
+  r = await req("POST", `/api/projects/${id}/payments`, { numbers: [1] });
+  ok(r.status === 409, "повторна оплата вже сплаченого → 409 (факт не перезаписується)");
   r = await req("GET", "/api/spots");
   ok(r.json.find((s) => s.number === 1).hasDebt === false, "сплачене місце №1 без боргу");
 

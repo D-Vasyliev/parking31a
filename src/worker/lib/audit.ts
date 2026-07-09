@@ -10,9 +10,9 @@ export interface AuditEntry {
   ip?: string | null;
 }
 
-/** Append-only запис у журнал аудиту (у тій самій БД). */
-export async function writeAudit(db: DB, entry: AuditEntry): Promise<void> {
-  await db.insert(auditLog).values({
+/** Insert-стейтмент для audit_log (щоб класти в той самий db.batch, що й дію). */
+export function auditIns(db: DB, entry: AuditEntry) {
+  return db.insert(auditLog).values({
     userId: entry.userId ?? null,
     action: entry.action,
     entityType: entry.entityType ?? null,
@@ -20,4 +20,9 @@ export async function writeAudit(db: DB, entry: AuditEntry): Promise<void> {
     payload: entry.payload !== undefined ? JSON.stringify(entry.payload) : null,
     ip: entry.ip ?? null,
   });
+}
+
+/** Append-only запис у журнал аудиту (окремо, коли batch недоречний). */
+export async function writeAudit(db: DB, entry: AuditEntry): Promise<void> {
+  await auditIns(db, entry);
 }

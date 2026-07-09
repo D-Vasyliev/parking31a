@@ -5,11 +5,12 @@ import type { AppContext } from "../env";
 import { createDb, type DB } from "../db";
 import { projects, projectSpots, spots, spotOwners, owners, notes } from "../db/schema";
 import { requireAuth } from "../middleware";
-import { writeAudit } from "../lib/audit";
+import { auditIns, writeAudit } from "../lib/audit";
 import { recalcShares, paymentStatus } from "../../shared/shares";
 import type { Section } from "../../shared/spots";
 import type { ProjectListItem, ProjectDetail, ProjectParticipant, PaymentMethod } from "../../shared/api";
 
+const MAX_KOP = 100_000_000_00; // 1 млрд грн — стеля для безпечної цілочисельної арифметики
 const iso = () => new Date().toISOString();
 const today = () => new Date().toISOString().slice(0, 10);
 const ip = (c: { req: { header: (n: string) => string | undefined } }) => c.req.header("CF-Connecting-IP") ?? null;
@@ -18,7 +19,7 @@ const NOT_FOUND = { error: { code: "not_found", message: "Проєкт не зн
 function fmtKop(kop: number): string {
   const neg = kop < 0;
   const a = Math.abs(kop);
-  const grn = String(Math.floor(a / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  const grn = String(Math.floor(a / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
   return `${neg ? "-" : ""}${grn},${String(a % 100).padStart(2, "0")}`;
 }
 function fmtDateUa(s: string): string {
@@ -39,20 +40,23 @@ async function getProject(db: DB, id: number) {
   if (!Number.isInteger(id)) return undefined;
   return (await db.select().from(projects).where(eq(projects.id, id)).limit(1))[0];
 }
-
-/** Перерахувати частки всім поточним учасникам проєкту (атомарно). */
-async function recalcAndPersist(db: DB, projectId: number, totalKop: number) {
-  const parts = await db
+async function fetchParts(db: DB, projectId: number): Promise<{ spotId: number; number: number }[]> {
+  const rows = await db
     .select({ spotId: projectSpots.spotId, number: spots.number })
     .from(projectSpots)
     .innerJoin(spots, eq(spots.id, projectSpots.spotId))
     .where(eq(projectSpots.projectId, projectId));
-  const shares = recalcShares(totalKop, parts.map((p) => ({ spotId: p.spotId, number: Number(p.number) })));
-  if (shares.length === 0) return;
-  const stmts = shares.map((s) =>
+  return rows.map((r) => ({ spotId: r.spotId, number: Number(r.number) }));
+}
+/** Update-стейтменти часток для батча (не виконує). */
+function shareStmts(db: DB, projectId: number, totalKop: number, parts: { spotId: number; number: number }[]) {
+  return recalcShares(totalKop, parts).map((s) =>
     db.update(projectSpots).set({ shareKop: s.shareKop }).where(and(eq(projectSpots.projectId, projectId), eq(projectSpots.spotId, s.spotId))),
   );
-  await db.batch([stmts[0], ...stmts.slice(1)]);
+}
+async function runBatch(db: DB, ops: unknown[]) {
+  if (ops.length === 0) return;
+  await (db.batch as (s: unknown[]) => Promise<unknown>)(ops);
 }
 
 async function buildDetail(db: DB, p: typeof projects.$inferSelect): Promise<ProjectDetail> {
@@ -112,7 +116,6 @@ async function buildDetail(db: DB, p: typeof projects.$inferSelect): Promise<Pro
 export const projectsRouter = new Hono<AppContext>();
 projectsRouter.use("*", requireAuth);
 
-// Список
 projectsRouter.get("/", async (c) => {
   const db = createDb(c.env.DB);
   const projs = await db
@@ -146,10 +149,9 @@ projectsRouter.get("/", async (c) => {
   );
 });
 
-// Створити (чернетка)
 projectsRouter.post("/", async (c) => {
-  const body = await parse(c, z.object({ title: z.string().min(1).max(200), description: z.string().max(2000).nullish(), totalKop: z.number().int().min(0) }));
-  if (!body) return c.json({ error: { code: "bad_request", message: "Вкажіть назву і вартість" } }, 400);
+  const body = await parse(c, z.object({ title: z.string().min(1).max(200), description: z.string().max(2000).nullish(), totalKop: z.number().int().min(0).max(MAX_KOP) }));
+  if (!body) return c.json({ error: { code: "bad_request", message: "Вкажіть назву і коректну вартість" } }, 400);
   const db = createDb(c.env.DB);
   const ins = await db
     .insert(projects)
@@ -167,37 +169,43 @@ projectsRouter.get("/:id", async (c) => {
   return c.json(await buildDetail(db, p));
 });
 
-// Редагувати (draft/active); зміна суми → перерахунок
 projectsRouter.patch("/:id", async (c) => {
-  const body = await parse(c, z.object({ title: z.string().min(1).max(200).optional(), description: z.string().max(2000).nullish(), totalKop: z.number().int().min(0).optional() }));
+  const body = await parse(c, z.object({ title: z.string().min(1).max(200).optional(), description: z.string().max(2000).nullish(), totalKop: z.number().int().min(0).max(MAX_KOP).optional() }));
   if (!body) return c.json({ error: { code: "bad_request", message: "Некоректні дані" } }, 400);
   const db = createDb(c.env.DB);
   const p = await getProject(db, Number(c.req.param("id")));
   if (!p) return c.json(NOT_FOUND, 404);
   if (p.status !== "draft" && p.status !== "active") return c.json({ error: { code: "readonly", message: "Проєкт лише для читання" } }, 409);
+  if (p.status === "active" && body.totalKop !== undefined && body.totalKop <= 0) {
+    return c.json({ error: { code: "guard", message: "Вартість активного проєкту має бути > 0" } }, 409);
+  }
   const set: Partial<{ title: string; description: string | null; totalKop: number }> = {};
   if (body.title !== undefined) set.title = body.title;
   if (body.description !== undefined) set.description = body.description ?? null;
   if (body.totalKop !== undefined) set.totalKop = body.totalKop;
-  if (Object.keys(set).length) await db.update(projects).set(set).where(eq(projects.id, p.id));
-  if (body.totalKop !== undefined) await recalcAndPersist(db, p.id, body.totalKop);
-  await writeAudit(db, { userId: c.get("user")!.id, action: "project.update", entityType: "project", entityId: String(p.id), payload: set, ip: ip(c) });
+
+  const ops: unknown[] = [];
+  if (Object.keys(set).length) ops.push(db.update(projects).set(set).where(eq(projects.id, p.id)));
+  if (body.totalKop !== undefined) ops.push(...shareStmts(db, p.id, body.totalKop, await fetchParts(db, p.id)));
+  ops.push(auditIns(db, { userId: c.get("user")!.id, action: "project.update", entityType: "project", entityId: String(p.id), payload: set, ip: ip(c) }));
+  await runBatch(db, ops);
   const fresh = await getProject(db, p.id);
   return c.json(await buildDetail(db, fresh!));
 });
 
-// Видалити (лише чернетка)
 projectsRouter.delete("/:id", async (c) => {
   const db = createDb(c.env.DB);
   const p = await getProject(db, Number(c.req.param("id")));
   if (!p) return c.json(NOT_FOUND, 404);
   if (p.status !== "draft") return c.json({ error: { code: "not_draft", message: "Видалити можна лише чернетку" } }, 409);
-  await db.delete(projects).where(eq(projects.id, p.id)); // project_spots каскадом
-  await writeAudit(db, { userId: c.get("user")!.id, action: "project.delete", entityType: "project", entityId: String(p.id), ip: ip(c) });
+  await db.batch([
+    db.delete(projects).where(eq(projects.id, p.id)),
+    auditIns(db, { userId: c.get("user")!.id, action: "project.delete", entityType: "project", entityId: String(p.id), ip: ip(c) }),
+  ]);
   return c.json({ ok: true });
 });
 
-// Задати повний набір учасників (draft/active) з перерахунком
+// Задати повний набір учасників (draft/active) — склад + перерахунок + аудит атомарно
 projectsRouter.put("/:id/spots", async (c) => {
   const body = await parse(c, z.object({ numbers: z.array(z.number().int()).max(400) }));
   if (!body) return c.json({ error: { code: "bad_request", message: "Некоректний список місць" } }, 400);
@@ -208,26 +216,33 @@ projectsRouter.put("/:id/spots", async (c) => {
 
   const wanted = await db.select({ id: spots.id, number: spots.number }).from(spots).where(inArray(spots.number, body.numbers.map(String)));
   const wantedIds = new Set(wanted.map((s) => s.id));
-  const current = await db.select({ spotId: projectSpots.spotId, paidAt: projectSpots.paidAt }).from(projectSpots).where(eq(projectSpots.projectId, p.id));
+  const current = await db
+    .select({ spotId: projectSpots.spotId, number: spots.number, paidAt: projectSpots.paidAt })
+    .from(projectSpots)
+    .innerJoin(spots, eq(spots.id, projectSpots.spotId))
+    .where(eq(projectSpots.projectId, p.id));
   const currentIds = new Set(current.map((r) => r.spotId));
 
   const toRemove = current.filter((r) => !wantedIds.has(r.spotId));
-  const paidRemoval = toRemove.find((r) => r.paidAt != null);
-  if (paidRemoval) return c.json({ error: { code: "paid_spot", message: "Спершу скасуйте оплату місця, перш ніж вилучати його" } }, 409);
+  if (toRemove.some((r) => r.paidAt != null)) return c.json({ error: { code: "paid_spot", message: "Спершу скасуйте оплату місця, перш ніж вилучати його" } }, 409);
 
+  const kept = current.filter((r) => wantedIds.has(r.spotId)).map((r) => ({ spotId: r.spotId, number: Number(r.number) }));
+  const added = wanted.filter((s) => !currentIds.has(s.id)).map((s) => ({ spotId: s.id, number: Number(s.number) }));
+  const finalParts = [...kept, ...added];
+  const shareMap = new Map(recalcShares(p.totalKop, finalParts).map((s) => [s.spotId, s.shareKop]));
+
+  const ops: unknown[] = [];
   const removeIds = toRemove.map((r) => r.spotId);
-  const addIds = wanted.filter((s) => !currentIds.has(s.id)).map((s) => s.id);
-  const ops = [];
   if (removeIds.length) ops.push(db.delete(projectSpots).where(and(eq(projectSpots.projectId, p.id), inArray(projectSpots.spotId, removeIds))));
-  for (const id of addIds) ops.push(db.insert(projectSpots).values({ projectId: p.id, spotId: id, shareKop: 0 }));
-  if (ops.length) await db.batch([ops[0], ...ops.slice(1)]);
-  await recalcAndPersist(db, p.id, p.totalKop);
-  await writeAudit(db, { userId: c.get("user")!.id, action: "project.spots_set", entityType: "project", entityId: String(p.id), payload: { added: addIds.length, removed: removeIds.length }, ip: ip(c) });
+  for (const a of added) ops.push(db.insert(projectSpots).values({ projectId: p.id, spotId: a.spotId, shareKop: shareMap.get(a.spotId) ?? 0 }));
+  for (const k of kept) ops.push(db.update(projectSpots).set({ shareKop: shareMap.get(k.spotId) ?? 0 }).where(and(eq(projectSpots.projectId, p.id), eq(projectSpots.spotId, k.spotId))));
+  ops.push(auditIns(db, { userId: c.get("user")!.id, action: "project.spots_set", entityType: "project", entityId: String(p.id), payload: { added: added.length, removed: removeIds.length }, ip: ip(c) }));
+  await runBatch(db, ops);
   const fresh = await getProject(db, p.id);
   return c.json(await buildDetail(db, fresh!));
 });
 
-// Позначити оплату (bulk): paid_kop = share_kop
+// Позначити оплату (bulk) — лише НЕсплачені; сплачені не перезаписуємо
 projectsRouter.post("/:id/payments", async (c) => {
   const body = await parse(
     c,
@@ -238,23 +253,25 @@ projectsRouter.post("/:id/payments", async (c) => {
   const p = await getProject(db, Number(c.req.param("id")));
   if (!p) return c.json(NOT_FOUND, 404);
   if (p.status !== "active") return c.json({ error: { code: "not_active", message: "Оплати відмічають лише в активному проєкті" } }, 409);
-  const paidAt = body.paidAt && /^\d{4}-\d{2}-\d{2}/.test(body.paidAt) ? body.paidAt.slice(0, 10) : today();
+  const paidAt = body.paidAt && /^\d{4}-\d{2}-\d{2}$/.test(body.paidAt.slice(0, 10)) ? body.paidAt.slice(0, 10) : today();
+  if (paidAt > today()) return c.json({ error: { code: "bad_date", message: "Дата оплати не може бути в майбутньому" } }, 400);
   const wanted = await db.select({ id: spots.id }).from(spots).where(inArray(spots.number, body.numbers.map(String)));
   const rows = await db.select().from(projectSpots).where(and(eq(projectSpots.projectId, p.id), inArray(projectSpots.spotId, wanted.map((s) => s.id))));
   if (rows.length === 0) return c.json({ error: { code: "not_participant", message: "Місця не є учасниками проєкту" } }, 400);
-  const stmts = rows.map((r) =>
+  const unpaid = rows.filter((r) => r.paidAt == null);
+  if (unpaid.length === 0) return c.json({ error: { code: "already_paid", message: "Обрані місця вже сплачені (скасуйте оплату для зміни)" } }, 409);
+  const ops: unknown[] = unpaid.map((r) =>
     db
       .update(projectSpots)
       .set({ paidKop: r.shareKop, paidAt, paidMarkedBy: c.get("user")!.id, paymentMethod: body.paymentMethod ?? null, paymentNote: body.paymentNote ?? null })
       .where(and(eq(projectSpots.projectId, p.id), eq(projectSpots.spotId, r.spotId))),
   );
-  await db.batch([stmts[0], ...stmts.slice(1)]);
-  await writeAudit(db, { userId: c.get("user")!.id, action: "payment.mark", entityType: "project", entityId: String(p.id), payload: { count: rows.length, paidAt }, ip: ip(c) });
+  ops.push(auditIns(db, { userId: c.get("user")!.id, action: "payment.mark", entityType: "project", entityId: String(p.id), payload: { count: unpaid.length, paidAt, method: body.paymentMethod ?? null }, ip: ip(c) }));
+  await runBatch(db, ops);
   const fresh = await getProject(db, p.id);
   return c.json(await buildDetail(db, fresh!));
 });
 
-// Скасувати оплату (з причиною)
 projectsRouter.post("/:id/payments/cancel", async (c) => {
   const body = await parse(c, z.object({ number: z.number().int(), reason: z.string().min(1).max(500) }));
   if (!body) return c.json({ error: { code: "bad_request", message: "Вкажіть причину скасування" } }, 400);
@@ -268,87 +285,86 @@ projectsRouter.post("/:id/payments/cancel", async (c) => {
   if (!ps || ps.paidAt == null) return c.json({ error: { code: "not_paid", message: "Оплату не зафіксовано" } }, 409);
   await db.batch([
     db.update(projectSpots).set({ paidKop: 0, paidAt: null, paidMarkedBy: null, paymentMethod: null, paymentNote: null }).where(and(eq(projectSpots.projectId, p.id), eq(projectSpots.spotId, spot.id))),
+    auditIns(db, {
+      userId: c.get("user")!.id,
+      action: "payment.cancel",
+      entityType: "project",
+      entityId: String(p.id),
+      payload: { before: { paidKop: ps.paidKop, paidAt: ps.paidAt }, meta: { reason: body.reason, spotNumber: body.number } },
+      ip: ip(c),
+    }),
   ]);
-  await writeAudit(db, {
-    userId: c.get("user")!.id,
-    action: "payment.cancel",
-    entityType: "project",
-    entityId: String(p.id),
-    payload: { before: { paidKop: ps.paidKop, paidAt: ps.paidAt }, meta: { reason: body.reason, spotNumber: body.number } },
-    ip: ip(c),
-  });
   const fresh = await getProject(db, p.id);
   return c.json(await buildDetail(db, fresh!));
 });
 
-// Перехід статусу
 projectsRouter.post("/:id/status/:transition", async (c) => {
   const db = createDb(c.env.DB);
   const p = await getProject(db, Number(c.req.param("id")));
   if (!p) return c.json(NOT_FOUND, 404);
   const t = c.req.param("transition");
   const uid = c.get("user")!.id;
-  const audit = (action: string, payload?: unknown) => writeAudit(db, { userId: uid, action, entityType: "project", entityId: String(p.id), payload, ip: ip(c) });
   const bad = () => c.json({ error: { code: "bad_transition", message: "Неможливий перехід" } }, 409);
+  const auditT = (payload?: unknown) => writeAudit(db, { userId: uid, action: "project.status_change", entityType: "project", entityId: String(p.id), payload, ip: ip(c) });
 
   if (t === "activate") {
     if (p.status !== "draft") return bad();
-    const cnt = (await db.select({ n: sql<number>`count(*)` }).from(projectSpots).where(eq(projectSpots.projectId, p.id)))[0]?.n ?? 0;
-    if (p.totalKop <= 0 || Number(cnt) < 1) return c.json({ error: { code: "guard", message: "Потрібні вартість > 0 і хоча б одне місце" } }, 409);
+    const parts = await fetchParts(db, p.id);
+    if (p.totalKop <= 0 || parts.length < 1) return c.json({ error: { code: "guard", message: "Потрібні вартість > 0 і хоча б одне місце" } }, 409);
     const r = await db.update(projects).set({ status: "active", activatedAt: iso() }).where(and(eq(projects.id, p.id), eq(projects.status, "draft"))).returning({ id: projects.id });
     if (!r.length) return bad();
-    await recalcAndPersist(db, p.id, p.totalKop);
-    await audit("project.status_change", { to: "active" });
+    await runBatch(db, [...shareStmts(db, p.id, p.totalKop, parts), auditIns(db, { userId: uid, action: "project.status_change", entityType: "project", entityId: String(p.id), payload: { to: "active" }, ip: ip(c) })]);
   } else if (t === "to_draft") {
     if (p.status !== "active") return bad();
     const paid = (await db.select({ n: sql<number>`count(*)` }).from(projectSpots).where(and(eq(projectSpots.projectId, p.id), sql`${projectSpots.paidAt} is not null`)))[0]?.n ?? 0;
     if (Number(paid) > 0) return c.json({ error: { code: "guard", message: "Спершу скасуйте всі оплати" } }, 409);
     const r = await db.update(projects).set({ status: "draft", activatedAt: null }).where(and(eq(projects.id, p.id), eq(projects.status, "active"))).returning({ id: projects.id });
     if (!r.length) return bad();
-    await audit("project.status_change", { to: "draft" });
+    await auditT({ to: "draft" });
   } else if (t === "complete") {
     if (p.status !== "active") return bad();
+    const cnt = (await db.select({ n: sql<number>`count(*)` }).from(projectSpots).where(eq(projectSpots.projectId, p.id)))[0]?.n ?? 0;
+    if (Number(cnt) < 1) return c.json({ error: { code: "guard", message: "У проєкті немає учасників" } }, 409);
     const r = await db.update(projects).set({ status: "completed", completedAt: iso() }).where(and(eq(projects.id, p.id), eq(projects.status, "active"))).returning({ id: projects.id });
     if (!r.length) return bad();
-    // авто-нотатки сплаченим (idempotent: чистимо старі, вставляємо нові)
     const paidRows = await db
       .select({ spotId: projectSpots.spotId, shareKop: projectSpots.shareKop, paidKop: projectSpots.paidKop, paidAt: projectSpots.paidAt })
       .from(projectSpots)
       .where(and(eq(projectSpots.projectId, p.id), sql`${projectSpots.paidAt} is not null`));
     const completedDate = fmtDateUa(today());
-    await db.delete(notes).where(and(eq(notes.projectId, p.id), eq(notes.kind, "project_auto")));
-    if (paidRows.length) {
-      const ins = paidRows.map((pr) => {
-        const delta = pr.paidKop - pr.shareKop;
-        let body = `Участь у проєкті «${p.title}» (завершено ${completedDate}).\nЧастка місця: ${fmtKop(pr.shareKop)} грн, сплачено: ${fmtKop(pr.paidKop)} грн (${fmtDateUa(pr.paidAt!)}).`;
-        if (delta > 0) body += `\nПереплата: ${fmtKop(delta)} грн.`;
-        else if (delta < 0) body += `\nДоплата: ${fmtKop(-delta)} грн.`;
-        return db.insert(notes).values({ spotId: pr.spotId, kind: "project_auto", projectId: p.id, body });
-      });
-      await db.batch([ins[0], ...ins.slice(1)]);
+    const ops: unknown[] = [db.delete(notes).where(and(eq(notes.projectId, p.id), eq(notes.kind, "project_auto")))];
+    for (const pr of paidRows) {
+      const delta = pr.paidKop - pr.shareKop;
+      let noteBody = `Участь у проєкті «${p.title}» (завершено ${completedDate}).\nЧастка місця: ${fmtKop(pr.shareKop)} грн, сплачено: ${fmtKop(pr.paidKop)} грн (${fmtDateUa(pr.paidAt!)}).`;
+      if (delta > 0) noteBody += `\nПереплата: ${fmtKop(delta)} грн.`;
+      else if (delta < 0) noteBody += `\nДоплата: ${fmtKop(-delta)} грн.`;
+      ops.push(db.insert(notes).values({ spotId: pr.spotId, kind: "project_auto", projectId: p.id, body: noteBody }));
     }
-    await audit("project.status_change", { to: "completed", autoNotes: paidRows.length });
+    ops.push(auditIns(db, { userId: uid, action: "project.status_change", entityType: "project", entityId: String(p.id), payload: { to: "completed", autoNotes: paidRows.length }, ip: ip(c) }));
+    await runBatch(db, ops);
   } else if (t === "uncomplete") {
     if (p.status !== "completed") return bad();
     const r = await db.update(projects).set({ status: "active", completedAt: null }).where(and(eq(projects.id, p.id), eq(projects.status, "completed"))).returning({ id: projects.id });
     if (!r.length) return bad();
-    await db.delete(notes).where(and(eq(notes.projectId, p.id), eq(notes.kind, "project_auto")));
-    await audit("project.status_change", { to: "active", removedAutoNotes: true });
+    await db.batch([
+      db.delete(notes).where(and(eq(notes.projectId, p.id), eq(notes.kind, "project_auto"))),
+      auditIns(db, { userId: uid, action: "project.status_change", entityType: "project", entityId: String(p.id), payload: { to: "active", removedAutoNotes: true }, ip: ip(c) }),
+    ]);
   } else if (t === "cancel") {
     if (p.status !== "active" && p.status !== "draft") return bad();
     const r = await db.update(projects).set({ status: "archived", cancelled: 1, archivedAt: iso() }).where(and(eq(projects.id, p.id), eq(projects.status, p.status))).returning({ id: projects.id });
     if (!r.length) return bad();
-    await audit("project.status_change", { to: "archived", cancelled: true });
+    await auditT({ to: "archived", cancelled: true });
   } else if (t === "archive") {
     if (p.status !== "completed") return bad();
     const r = await db.update(projects).set({ status: "archived", archivedAt: iso() }).where(and(eq(projects.id, p.id), eq(projects.status, "completed"))).returning({ id: projects.id });
     if (!r.length) return bad();
-    await audit("project.status_change", { to: "archived" });
+    await auditT({ to: "archived" });
   } else if (t === "unarchive") {
     if (p.status !== "archived" || p.cancelled === 1) return bad();
     const r = await db.update(projects).set({ status: "completed", archivedAt: null }).where(and(eq(projects.id, p.id), eq(projects.status, "archived"), eq(projects.cancelled, 0))).returning({ id: projects.id });
     if (!r.length) return bad();
-    await audit("project.status_change", { to: "completed" });
+    await auditT({ to: "completed" });
   } else {
     return c.json({ error: { code: "bad_transition", message: "Невідомий перехід" } }, 400);
   }

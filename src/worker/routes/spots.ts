@@ -3,8 +3,9 @@ import { and, asc, desc, eq, isNull, isNotNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { AppContext } from "../env";
 import { createDb, type DB } from "../db";
-import { spots, spotOwners, owners, notes, users, auditLog, projects, projectSpots } from "../db/schema";
+import { spots, spotOwners, owners, notes, users, projects, projectSpots } from "../db/schema";
 import { requireAuth } from "../middleware";
+import { auditIns } from "../lib/audit";
 import { paymentStatus } from "../../shared/shares";
 import type { Section } from "../../shared/spots";
 import type { SpotSummary, SpotDetail, SpotOwnerView, OwnerHistoryEntry, NoteView, SpotProjectView } from "../../shared/api";
@@ -13,21 +14,6 @@ const NOT_FOUND = { error: { code: "not_found", message: "Місце не зна
 const today = () => new Date().toISOString().slice(0, 10);
 const SQL_NOW = sql`(datetime('now'))`;
 const ip = (c: { req: { header: (n: string) => string | undefined } }) => c.req.header("CF-Connecting-IP") ?? null;
-
-/** Значення для вставки в audit_log (щоб класти в той самий db.batch, що й дію). */
-function auditIns(
-  db: DB,
-  v: { userId: number; action: string; entityType?: string; entityId?: string; payload?: unknown; ip: string | null },
-) {
-  return db.insert(auditLog).values({
-    userId: v.userId,
-    action: v.action,
-    entityType: v.entityType ?? null,
-    entityId: v.entityId ?? null,
-    payload: v.payload !== undefined ? JSON.stringify(v.payload) : null,
-    ip: v.ip,
-  });
-}
 
 async function getSpot(db: DB, number: string) {
   return (await db.select().from(spots).where(eq(spots.number, number)).limit(1))[0];

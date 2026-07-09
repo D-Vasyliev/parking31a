@@ -1,16 +1,12 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiGet, apiPost, apiPatch, apiDelete, apiPut, type ApiResult } from "../api";
-import { formatKop, formatDate } from "../format";
+import { formatKop, formatDate, parseKop } from "../format";
 import { MapPicker } from "../components/MapPicker";
 import type { ProjectDetail as PD, ProjectParticipant, PaymentMethod } from "../../shared/api";
 
 const STATUS_LABEL = { draft: "Чернетка", active: "Активний", completed: "Завершений", archived: "Архів" } as const;
 
-function parseKop(v: string): number {
-  const n = Number(v.replace(/\s/g, "").replace(",", "."));
-  return Number.isFinite(n) ? Math.round(n * 100) : 0;
-}
 function payStatusText(p: ProjectParticipant): string {
   if (p.status === "unpaid") return "Не сплачено";
   if (p.status === "paid") return "Сплачено";
@@ -22,7 +18,7 @@ export function ProjectDetail() {
   const { id } = useParams();
   const nav = useNavigate();
   const [p, setP] = useState<PD | null>(null);
-  const [state, setState] = useState<"loading" | "ok" | "notfound">("loading");
+  const [state, setState] = useState<"loading" | "ok" | "notfound" | "error">("loading");
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [edit, setEdit] = useState(false);
@@ -38,6 +34,7 @@ export function ProjectDetail() {
       setForm({ title: r.data.title, description: r.data.description ?? "", total: (r.data.totalKop / 100).toFixed(2) });
       setState("ok");
     } else if (r.status === 404) setState("notfound");
+    else setState((s) => (s === "loading" ? "error" : s));
   }
   useEffect(() => {
     void load();
@@ -62,7 +59,17 @@ export function ProjectDetail() {
 
   async function saveEdit(e: FormEvent) {
     e.preventDefault();
-    await mutate(apiPatch(`/api/projects/${id}`, { title: form.title, description: form.description || null, totalKop: parseKop(form.total) }), () => setEdit(false));
+    const kop = parseKop(form.total);
+    if (kop === null) {
+      setErr("Некоректна вартість");
+      return;
+    }
+    if (p && p.status === "active" && kop !== p.totalKop && p.participants.some((x) => x.paidAt)) {
+      const n = p.participants.length;
+      const newBase = n ? Math.floor(kop / n) : 0;
+      if (!confirm(`Змінити вартість? Частка стане ≈ ${formatKop(newBase)}. У сплачених місць виникне переплата/доплата.`)) return;
+    }
+    await mutate(apiPatch(`/api/projects/${id}`, { title: form.title, description: form.description || null, totalKop: kop }), () => setEdit(false));
   }
   async function del() {
     if (!confirm("Видалити чернетку проєкту?")) return;
@@ -87,20 +94,28 @@ export function ProjectDetail() {
     if (!p) return;
     const unpaid = p.participants.filter((x) => !x.paidAt);
     const paid = p.participants.length - unpaid.length;
-    const list = unpaid.slice(0, 12).map((x) => `№${x.number}`).join(", ") + (unpaid.length > 12 ? "…" : "");
+    const list = unpaid.slice(0, 12).map((x) => `№${x.number}${x.ownerName ? ` (${x.ownerName})` : ""}`).join(", ") + (unpaid.length > 12 ? "…" : "");
     const msg = `Завершити «${p.title}»?\n\nСплатили: ${paid} (${formatKop(p.collectedKop)}).\nНе сплатили: ${unpaid.length}${unpaid.length ? ": " + list : ""}.\n\nМісцям, що сплатили, буде додано автоматичну нотатку.`;
     if (!confirm(msg)) return;
     await transition("complete");
   }
   async function saveSpots(numbers: number[]) {
+    const paidCount = p?.participants.filter((x) => x.paidAt).length ?? 0;
+    if (p && p.status === "active" && paidCount > 0) {
+      const newBase = numbers.length ? Math.floor(p.totalKop / numbers.length) : 0;
+      if (!confirm(`Змінити склад на ${numbers.length} місць? Нова частка ≈ ${formatKop(newBase)}; у ${paidCount} сплачених місць зміниться дельта.`)) return;
+    }
     setPicker(false);
     await mutate(apiPut(`/api/projects/${id}/spots`, { numbers }));
   }
 
   if (state === "loading") return <div className="page"><p className="sub">Завантаження…</p></div>;
+  if (state === "error") return <div className="page"><p className="sub">Помилка завантаження. <button className="btn-link" onClick={() => void load()}>Повторити</button></p></div>;
   if (state === "notfound" || !p) return <div className="page"><p className="sub">Проєкт не знайдено.</p></div>;
 
-  const shareBase = p.participants.length ? Math.floor(p.totalKop / p.participants.length) : 0;
+  const n = p.participants.length;
+  const base = n ? Math.floor(p.totalKop / n) : 0;
+  const remainder = n ? p.totalKop - base * n : 0;
   const paidCount = p.participants.filter((x) => x.paidAt).length;
   const pct = p.totalKop ? Math.min(100, Math.round((p.collectedKop / p.totalKop) * 100)) : 0;
   const editable = p.status === "draft" || p.status === "active";
@@ -125,6 +140,14 @@ export function ProjectDetail() {
             <>
               <button className="btn btn-primary btn-sm" disabled={busy} onClick={complete}>Завершити</button>
               <button className="btn btn-sm" onClick={() => setEdit((v) => !v)}>Редагувати</button>
+              <button
+                className="btn btn-sm"
+                disabled={busy || paidCount > 0}
+                title={paidCount > 0 ? "Спершу скасуйте оплати" : undefined}
+                onClick={() => transition("to_draft")}
+              >
+                У чернетку
+              </button>
               <button className="btn btn-sm danger" disabled={busy} onClick={() => transition("cancel")}>Скасувати проєкт</button>
             </>
           ) : null}
@@ -156,10 +179,22 @@ export function ProjectDetail() {
 
       <div className="calc">
         <div className="calc-formula">
-          {formatKop(p.totalKop)} ÷ {p.participants.length} = <b>{formatKop(shareBase)}</b> / місце
-          <span className="hint" title="Копійчаний залишок розподілено по +1 коп. місцям з найменшими номерами">ⓘ</span>
+          {n === 0 ? (
+            <>{formatKop(p.totalKop)} · без учасників</>
+          ) : remainder > 0 ? (
+            <>
+              {formatKop(base + 1)} × {remainder} + {formatKop(base)} × {n - remainder} = <b>{formatKop(p.totalKop)}</b>
+            </>
+          ) : (
+            <>
+              {formatKop(p.totalKop)} ÷ {n} = <b>{formatKop(base)}</b> / місце
+            </>
+          )}
+          <button type="button" className="hint" aria-label="Копійчаний залишок розподілено по +1 коп. місцям з найменшими номерами" title="Копійчаний залишок розподілено по +1 коп. місцям з найменшими номерами">
+            ⓘ
+          </button>
         </div>
-        <div className="progress">
+        <div className="progress" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Прогрес збору">
           <div className="progress-bar" style={{ width: `${pct}%` }} />
         </div>
         <div className="calc-sub">

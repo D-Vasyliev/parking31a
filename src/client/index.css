@@ -800,13 +800,13 @@ h1 {
   color: var(--ok);
 }
 .pay.unpaid {
-  color: var(--muted);
+  color: var(--err); /* несплачено = борг (червоний зарезервовано під борг) */
 }
 .pay.underpaid {
-  color: var(--err);
+  color: #c77f14; /* доплата — попереджувальний бурштиновий */
 }
 .pay.overpaid {
-  color: var(--accent);
+  color: var(--muted); /* переплата — нейтрально */
 }
 .new-project,
 .pay-form {
@@ -836,6 +836,10 @@ h1 {
   color: var(--muted);
   cursor: help;
   margin-left: 6px;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
 }
 .progress {
   height: 10px;

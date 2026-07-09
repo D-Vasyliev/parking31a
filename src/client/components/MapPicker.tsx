@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ParkingMap } from "../map/ParkingMap";
 import { LEVEL_META, type LevelKey } from "../map/geometry";
 import { formatKop } from "../format";
@@ -17,6 +17,12 @@ interface Props {
 export function MapPicker({ initial, locked, totalKop, onSave, onCancel }: Props) {
   const [chosen, setChosen] = useState<Set<number>>(new Set(initial));
   const [level, setLevel] = useState<LevelKey>("AB");
+
+  useEffect(() => {
+    const onEsc = (e: KeyboardEvent) => e.key === "Escape" && onCancel();
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [onCancel]);
 
   function toggle(n: number) {
     setChosen((prev) => {

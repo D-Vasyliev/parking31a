@@ -1,15 +1,10 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiGet, apiPost } from "../api";
-import { formatKop } from "../format";
+import { formatKop, parseKop } from "../format";
 import type { ProjectListItem, ProjectDetail, ProjectStatus } from "../../shared/api";
 
 const STATUS_LABEL: Record<ProjectStatus, string> = { draft: "Чернетка", active: "Активний", completed: "Завершений", archived: "Архів" };
-
-function parseKop(v: string): number {
-  const n = Number(v.replace(/\s/g, "").replace(",", "."));
-  return Number.isFinite(n) ? Math.round(n * 100) : 0;
-}
 
 export function Projects() {
   const nav = useNavigate();
@@ -31,9 +26,14 @@ export function Projects() {
 
   async function create(e: FormEvent) {
     e.preventDefault();
+    const kop = parseKop(total);
+    if (kop === null) {
+      setErr("Некоректна вартість (напр. 120000 або 120000,50)");
+      return;
+    }
     setBusy(true);
     setErr(null);
-    const r = await apiPost<ProjectDetail>("/api/projects", { title: title.trim(), description: desc || null, totalKop: parseKop(total) });
+    const r = await apiPost<ProjectDetail>("/api/projects", { title: title.trim(), description: desc || null, totalKop: kop });
     setBusy(false);
     if (r.ok && r.data) nav(`/projects/${r.data.id}`);
     else setErr(r.error?.message ?? "Помилка");
