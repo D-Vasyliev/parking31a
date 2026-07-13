@@ -673,6 +673,32 @@ h1 {
   font: inherit;
 }
 
+/* ── технічна інформація (статті) ── */
+.article-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.article-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.article-form textarea {
+  border: 1px solid var(--line);
+  background: var(--field-bg);
+  color: var(--ink);
+  border-radius: 9px;
+  padding: 9px 11px;
+  font: inherit;
+  resize: vertical;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 /* ── tables / pages ── */
 .page {
   max-width: 1000px;

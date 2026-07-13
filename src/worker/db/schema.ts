@@ -144,6 +144,16 @@ export const notes = sqliteTable("notes", {
   updatedAt: text("updated_at"),
 });
 
+export const techArticles = sqliteTable("tech_articles", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  body: text("body").notNull().default(""),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+  updatedBy: integer("updated_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: text("created_at").notNull().default(now),
+  updatedAt: text("updated_at").notNull().default(now),
+});
+
 export const auditLog = sqliteTable("audit_log", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   at: text("at").notNull().default(now),
@@ -163,4 +173,5 @@ export type SpotOwner = typeof spotOwners.$inferSelect;
 export type Project = typeof projects.$inferSelect;
 export type ProjectSpot = typeof projectSpots.$inferSelect;
 export type Note = typeof notes.$inferSelect;
+export type TechArticle = typeof techArticles.$inferSelect;
 export type AuditEntry = typeof auditLog.$inferSelect;

@@ -11,6 +11,7 @@ import { OwnerDetail } from "./pages/OwnerDetail";
 import { Projects } from "./pages/Projects";
 import { ProjectDetail } from "./pages/ProjectDetail";
 import { Settings } from "./pages/Settings";
+import { TechInfo } from "./pages/TechInfo";
 
 export function App() {
   return (
@@ -33,6 +34,7 @@ export function App() {
             <Route path="/owners/:id" element={<OwnerDetail />} />
             <Route path="/projects" element={<Projects />} />
             <Route path="/projects/:id" element={<ProjectDetail />} />
+            <Route path="/tech" element={<TechInfo />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

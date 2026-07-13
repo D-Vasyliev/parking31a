@@ -305,6 +305,20 @@ export interface AuditQuery {
   offset?: number;
 }
 
+// ─── Технічна інформація по паркінгу (короткі статті) ───
+export interface ArticleView {
+  id: number;
+  title: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+  updatedByEmail: string | null;
+}
+export interface ArticleSaveBody {
+  title: string;
+  body?: string | null;
+}
+
 export interface ChangePasswordBody {
   currentPassword: string;
   newPassword: string;

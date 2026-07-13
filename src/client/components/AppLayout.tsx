@@ -46,6 +46,9 @@ export function AppLayout() {
           <NavLink to="/projects" className={navClass}>
             Проєкти
           </NavLink>
+          <NavLink to="/tech" className={navClass}>
+            Технічна інформація
+          </NavLink>
           <NavLink to="/settings" className={navClass}>
             Налаштування
           </NavLink>
@@ -69,6 +72,9 @@ export function AppLayout() {
         </NavLink>
         <NavLink to="/projects" className={navClass}>
           Проєкти
+        </NavLink>
+        <NavLink to="/tech" className={navClass}>
+          Інфо
         </NavLink>
         <NavLink to="/settings" className={navClass}>
           Ще

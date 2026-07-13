@@ -9,6 +9,7 @@ import { projectsRouter } from "./routes/projects";
 import { searchRouter } from "./routes/search";
 import { usersRouter } from "./routes/users";
 import { auditRouter } from "./routes/audit";
+import { articlesRouter } from "./routes/articles";
 import { runBackup, cleanupExpired } from "./cron";
 import { createDb } from "./db";
 import { writeAudit } from "./lib/audit";
@@ -29,6 +30,7 @@ app.route("/api/projects", projectsRouter);
 app.route("/api/search", searchRouter);
 app.route("/api/users", usersRouter);
 app.route("/api/audit", auditRouter);
+app.route("/api/articles", articlesRouter);
 
 // Ручний запуск бекапу (адмін)
 app.post("/api/backup", requireAuth, requireAdmin, async (c) => {
