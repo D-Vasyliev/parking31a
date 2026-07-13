@@ -73,7 +73,7 @@ export const spots = sqliteTable("spots", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   number: text("number").notNull().unique(),
   sheet: integer("sheet").$type<Sheet>().notNull(),
-  section: text("section", { enum: ["А", "Б", "В", "Г"] }).notNull(),
+  section: text("section", { enum: ["1", "2", "3", "4"] }).notNull(),
   svgId: text("svg_id").unique(),
   plate: text("plate"),
   carMake: text("car_make"),

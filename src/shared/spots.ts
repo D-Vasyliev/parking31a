@@ -1,9 +1,11 @@
-// Канонічний перелік машиномісць (181 шт.), звірено із замовником 09.07.2026.
-// Єдине джерело правди діапазонів — spot-ranges.json (його ж читає scripts/gen-seed.mjs).
+// Канонічний перелік машиномісць (181 шт.), звірено із замовником 13.07.2026 за фото схеми.
+// Поверх 1 (sheet 1): секція 1 = №1–43, секція 2 = №44–89.
+// Поверх 2 (sheet 2): секція 3 = №90–133, секція 4 = №134–181.
+// Єдине джерело правди діапазонів — spot-ranges.json.
 
 import rangesData from "./spot-ranges.json";
 
-export type Section = "А" | "Б" | "В" | "Г";
+export type Section = "1" | "2" | "3" | "4";
 export type Sheet = 1 | 2;
 
 export interface SectionRange {
@@ -20,7 +22,7 @@ export interface SpotDef {
   svgId: string;
 }
 
-/** Діапазони номерів по секціях (аркуш 1 = А/Б, аркуш 2 = В/Г). */
+/** Діапазони номерів по секціях (поверх 1 = секції 1/2, поверх 2 = секції 3/4). */
 export const SECTION_RANGES = rangesData.ranges as readonly SectionRange[];
 
 export const SPOTS: SpotDef[] = SECTION_RANGES.flatMap((r) => {

@@ -1,7 +1,7 @@
 // Геометрія схеми паркінгу (порт із reference/parking-scheme.html) → дані для React-SVG.
 import type { Section } from "../../shared/spots";
 
-export type LevelKey = "AB" | "VG";
+export type LevelKey = "F1" | "F2";
 
 export interface Stall {
   n: number;
@@ -53,24 +53,26 @@ interface RowCfg {
   section: Section;
 }
 
+// Поверх 1: секція 1 (№1–43) + секція 2 (№44–89). Поверх 2: секція 3 (№90–133) + секція 4 (№134–181).
+// У кожній парі рядків верхній (R1/R5) — старші номери, нижній (R3/R7) — молодші.
 const LEVELS: Record<LevelKey, RowCfg[]> = {
-  AB: [
-    { y: R1, from: 21, to: 44, section: "Б" },
-    { y: R3, from: 1, to: 20, section: "Б" },
-    { y: R5, from: 70, to: 88, section: "А" },
-    { y: R7, from: 45, to: 69, section: "А" },
+  F1: [
+    { y: R1, from: 21, to: 43, section: "1" },
+    { y: R3, from: 1, to: 20, section: "1" },
+    { y: R5, from: 70, to: 89, section: "2" },
+    { y: R7, from: 44, to: 69, section: "2" },
   ],
-  VG: [
-    { y: R1, from: 111, to: 133, section: "В" },
-    { y: R3, from: 89, to: 110, section: "В" },
-    { y: R5, from: 160, to: 181, section: "Г" },
-    { y: R7, from: 134, to: 159, section: "Г" },
+  F2: [
+    { y: R1, from: 111, to: 133, section: "3" },
+    { y: R3, from: 90, to: 110, section: "3" },
+    { y: R5, from: 161, to: 181, section: "4" },
+    { y: R7, from: 134, to: 160, section: "4" },
   ],
 };
 
 export const LEVEL_META: Record<LevelKey, { title: string; range: string }> = {
-  AB: { title: "Секція А, Б", range: "№ 1–88" },
-  VG: { title: "Секція В, Г", range: "№ 89–181" },
+  F1: { title: "Поверх 1", range: "секції 1–2 · №1–89" },
+  F2: { title: "Поверх 2", range: "секції 3–4 · №90–181" },
 };
 
 export function layout(level: LevelKey): LevelLayout {

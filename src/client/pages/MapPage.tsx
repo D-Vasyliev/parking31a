@@ -11,7 +11,7 @@ export function MapPage() {
   const { number } = useParams();
   const nav = useNavigate();
   const [spots, setSpots] = useState<SpotSummary[]>([]);
-  const [level, setLevel] = useState<LevelKey>("AB");
+  const [level, setLevel] = useState<LevelKey>("F1");
   const [search, setSearch] = useState("");
   const [highlight, setHighlight] = useState<number | null>(null);
   const [activeProjects, setActiveProjects] = useState(0);
@@ -39,7 +39,7 @@ export function MapPage() {
   useEffect(() => {
     if (selected != null) {
       const s = byNumber.get(selected);
-      if (s) setLevel(s.sheet === 1 ? "AB" : "VG");
+      if (s) setLevel(s.sheet === 1 ? "F1" : "F2");
     }
   }, [selected, byNumber]);
 
@@ -61,7 +61,7 @@ export function MapPage() {
     return () => window.removeEventListener("keydown", h);
   }, []);
 
-  const levelSpots = useMemo(() => spots.filter((s) => (level === "AB" ? s.sheet === 1 : s.sheet === 2)), [spots, level]);
+  const levelSpots = useMemo(() => spots.filter((s) => (level === "F1" ? s.sheet === 1 : s.sheet === 2)), [spots, level]);
   const occupied = levelSpots.filter((s) => s.occupied).length;
   const selectedSpots = useMemo(() => spots.filter((s) => selection.has(s.number)).sort((a, b) => a.number - b.number), [spots, selection]);
 
@@ -83,7 +83,7 @@ export function MapPage() {
     const n = parseInt(v, 10);
     const s = !isNaN(n) ? byNumber.get(n) : undefined;
     if (s) {
-      setLevel(s.sheet === 1 ? "AB" : "VG");
+      setLevel(s.sheet === 1 ? "F1" : "F2");
       setHighlight(n);
     } else {
       setHighlight(null);
@@ -94,7 +94,7 @@ export function MapPage() {
     <div className="map-page">
       <div className="map-toolbar">
         <div className="tabs">
-          {(["AB", "VG"] as LevelKey[]).map((k) => (
+          {(["F1", "F2"] as LevelKey[]).map((k) => (
             <button key={k} type="button" className={"tab" + (level === k ? " active" : "")} onClick={() => setLevel(k)}>
               {LEVEL_META[k].title} <span className="cnt">{LEVEL_META[k].range}</span>
             </button>

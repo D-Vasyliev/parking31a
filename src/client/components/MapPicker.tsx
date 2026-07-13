@@ -16,7 +16,7 @@ interface Props {
 
 export function MapPicker({ initial, locked, totalKop, onSave, onCancel }: Props) {
   const [chosen, setChosen] = useState<Set<number>>(new Set(initial));
-  const [level, setLevel] = useState<LevelKey>("AB");
+  const [level, setLevel] = useState<LevelKey>("F1");
 
   useEffect(() => {
     const onEsc = (e: KeyboardEvent) => e.key === "Escape" && onCancel();
@@ -42,7 +42,7 @@ export function MapPicker({ initial, locked, totalKop, onSave, onCancel }: Props
         <div className="picker-head">
           <strong>Місця проєкту</strong>
           <div className="tabs">
-            {(["AB", "VG"] as LevelKey[]).map((k) => (
+            {(["F1", "F2"] as LevelKey[]).map((k) => (
               <button key={k} type="button" className={"tab" + (level === k ? " active" : "")} onClick={() => setLevel(k)}>
                 {LEVEL_META[k].title}
               </button>

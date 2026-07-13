@@ -1,8 +1,8 @@
 {
   "ranges": [
-    { "from": 1, "to": 44, "sheet": 1, "section": "Б" },
-    { "from": 45, "to": 88, "sheet": 1, "section": "А" },
-    { "from": 89, "to": 133, "sheet": 2, "section": "В" },
-    { "from": 134, "to": 181, "sheet": 2, "section": "Г" }
+    { "from": 1, "to": 43, "sheet": 1, "section": "1" },
+    { "from": 44, "to": 89, "sheet": 1, "section": "2" },
+    { "from": 90, "to": 133, "sheet": 2, "section": "3" },
+    { "from": 134, "to": 181, "sheet": 2, "section": "4" }
   ]
 }
