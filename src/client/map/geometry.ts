@@ -51,24 +51,27 @@ interface RowCfg {
   from: number;
   to: number;
   section: Section;
+  reverse?: boolean; // малювати ряд справа наліво (from — праворуч) для змієподібної нумерації
 }
 
 // Розташування як на схемі замовника: угорі — старша секція, знизу — молодша.
 // Поверх 1: зверху секція 2 (№44–89), знизу секція 1 (№1–43).
 // Поверх 2: зверху секція 4 (№134–181), знизу секція 3 (№90–133).
 // У кожній секції перше (менше) місце — у верхньому рядку (R1/R5), більші — нижче (R3/R7).
+// Нумерація змієподібна: верхній ряд зліва направо, нижній (R3/R7) — справа наліво
+// (напр. №21 і №70 починаються праворуч), тож номери йдуть неперервно.
 const LEVELS: Record<LevelKey, RowCfg[]> = {
   F1: [
     { y: R1, from: 44, to: 69, section: "2" },
-    { y: R3, from: 70, to: 89, section: "2" },
+    { y: R3, from: 70, to: 89, section: "2", reverse: true },
     { y: R5, from: 1, to: 20, section: "1" },
-    { y: R7, from: 21, to: 43, section: "1" },
+    { y: R7, from: 21, to: 43, section: "1", reverse: true },
   ],
   F2: [
     { y: R1, from: 134, to: 160, section: "4" },
-    { y: R3, from: 161, to: 181, section: "4" },
+    { y: R3, from: 161, to: 181, section: "4", reverse: true },
     { y: R5, from: 90, to: 110, section: "3" },
-    { y: R7, from: 111, to: 133, section: "3" },
+    { y: R7, from: 111, to: 133, section: "3", reverse: true },
   ],
 };
 
@@ -85,7 +88,8 @@ export function layout(level: LevelKey): LevelLayout {
     const n = r.to - r.from + 1;
     if (n > maxCount) maxCount = n;
     for (let i = 0; i < n; i++) {
-      stalls.push({ n: r.from + i, section: r.section, x: LEFT + i * SW, y: r.y, w: SW, h: SH });
+      const pos = r.reverse ? n - 1 - i : i;
+      stalls.push({ n: r.from + i, section: r.section, x: LEFT + pos * SW, y: r.y, w: SW, h: SH });
     }
   }
   const rowRight = LEFT + maxCount * SW;
