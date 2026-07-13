@@ -103,7 +103,8 @@ h1 {
   color: var(--muted);
   font-weight: 600;
 }
-.field input {
+.field input,
+.field textarea {
   border: 1px solid var(--line);
   background: var(--field-bg);
   color: var(--ink);
@@ -112,10 +113,22 @@ h1 {
   font-size: 15px;
   font-family: inherit;
 }
-.field input:focus {
+.field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 96px;
+  line-height: 1.45;
+}
+.field input:focus,
+.field textarea:focus {
   outline: 2px solid var(--accent);
   outline-offset: -1px;
   border-color: var(--accent);
+}
+.proj-desc {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .form-error {
   margin: 0;
@@ -605,11 +618,14 @@ h1 {
 }
 .note-add {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 8px;
   margin-bottom: 12px;
 }
-.note-add input {
-  flex: 1;
+.note-add textarea {
+  width: 100%;
+  box-sizing: border-box;
   border: 1px solid var(--line);
   background: var(--field-bg);
   color: var(--ink);
@@ -617,6 +633,9 @@ h1 {
   padding: 8px 10px;
   font: inherit;
   font-size: 14px;
+  resize: vertical;
+  min-height: 52px;
+  line-height: 1.45;
 }
 .notes {
   list-style: none;
@@ -647,6 +666,10 @@ h1 {
   color: var(--accent);
   margin-right: 6px;
 }
+.note-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .note-meta {
   display: flex;
   justify-content: space-between;
@@ -660,17 +683,22 @@ h1 {
 }
 .note-edit {
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  align-items: center;
+  align-items: stretch;
 }
-.note-edit input {
-  flex: 1;
+.note-edit textarea {
+  width: 100%;
+  box-sizing: border-box;
   border: 1px solid var(--line);
   background: var(--card);
   color: var(--ink);
   border-radius: 8px;
   padding: 6px 9px;
   font: inherit;
+  resize: vertical;
+  min-height: 72px;
+  line-height: 1.45;
 }
 
 /* ── технічна інформація (статті) ── */

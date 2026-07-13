@@ -250,7 +250,7 @@ spotsRouter.delete("/:number/owners", async (c) => {
 
 // Додати ручну нотатку
 spotsRouter.post("/:number/notes", async (c) => {
-  const body = await parse(c, z.object({ body: z.string().min(1).max(2000) }));
+  const body = await parse(c, z.object({ body: z.string().min(1).max(20000) }));
   if (!body) return c.json({ error: { code: "bad_request", message: "Порожня нотатка" } }, 400);
   const db = createDb(c.env.DB);
   const spot = await getSpot(db, c.req.param("number"));

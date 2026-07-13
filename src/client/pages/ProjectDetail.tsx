@@ -130,7 +130,7 @@ export function ProjectDetail() {
         <div>
           <h1>{p.title}</h1>
           <span className={`pstatus ${p.status}`}>{p.cancelled ? "Скасований" : STATUS_LABEL[p.status]}</span>
-          {p.description ? <p className="sub">{p.description}</p> : null}
+          {p.description ? <p className="sub proj-desc">{p.description}</p> : null}
         </div>
         <div className="row-actions wrap">
           {p.status === "draft" ? (
@@ -172,7 +172,7 @@ export function ProjectDetail() {
       {edit && editable ? (
         <form className="form new-project" onSubmit={saveEdit}>
           <label className="field"><span>Назва</span><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required /></label>
-          <label className="field"><span>Опис</span><input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label>
+          <label className="field"><span>Опис</span><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={5} /></label>
           <label className="field"><span>Вартість, грн</span><input value={form.total} onChange={(e) => setForm({ ...form, total: e.target.value })} inputMode="decimal" /></label>
           <div className="row-actions">
             <button className="btn btn-primary btn-sm" disabled={busy}>Зберегти</button>

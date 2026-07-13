@@ -333,7 +333,7 @@ export function SpotCard({ number, onClose, onChanged }: Props) {
                 <h3>Нотатки</h3>
               </div>
               <form className="note-add" onSubmit={addNote}>
-                <input aria-label="Нова нотатка" placeholder="Додати нотатку…" value={note} onChange={(e) => setNote(e.target.value)} />
+                <textarea aria-label="Нова нотатка" placeholder="Додати нотатку…" value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
                 <button className="btn btn-sm" disabled={busy || !note.trim()}>Додати</button>
               </form>
               <ul className="notes">
@@ -341,9 +341,11 @@ export function SpotCard({ number, onClose, onChanged }: Props) {
                   <li key={n.id} className={n.kind === "project_auto" ? "auto" : ""}>
                     {editNote?.id === n.id ? (
                       <div className="note-edit">
-                        <input aria-label="Текст нотатки" value={editNote.body} onChange={(e) => setEditNote({ id: n.id, body: e.target.value })} />
-                        <button className="btn-link" onClick={saveNoteEdit} disabled={busy}>зберегти</button>
-                        <button className="btn-link" onClick={() => setEditNote(null)}>скасувати</button>
+                        <textarea aria-label="Текст нотатки" value={editNote.body} onChange={(e) => setEditNote({ id: n.id, body: e.target.value })} rows={3} />
+                        <div className="row-actions">
+                          <button className="btn-link" onClick={saveNoteEdit} disabled={busy}>зберегти</button>
+                          <button className="btn-link" onClick={() => setEditNote(null)}>скасувати</button>
+                        </div>
                       </div>
                     ) : (
                       <>

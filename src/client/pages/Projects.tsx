@@ -56,7 +56,7 @@ export function Projects() {
           </label>
           <label className="field">
             <span>Опис</span>
-            <input value={desc} onChange={(e) => setDesc(e.target.value)} />
+            <textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={5} />
           </label>
           <label className="field">
             <span>Загальна вартість, грн</span>

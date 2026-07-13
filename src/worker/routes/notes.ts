@@ -18,7 +18,7 @@ notesRouter.use("*", requireAuth);
 notesRouter.patch("/:id", async (c) => {
   let body: { body: string } | null = null;
   try {
-    const parsed = z.object({ body: z.string().min(1).max(2000) }).safeParse(await c.req.json());
+    const parsed = z.object({ body: z.string().min(1).max(20000) }).safeParse(await c.req.json());
     if (parsed.success) body = parsed.data;
   } catch {
     body = null;

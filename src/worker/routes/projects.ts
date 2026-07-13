@@ -151,7 +151,7 @@ projectsRouter.get("/", async (c) => {
 });
 
 projectsRouter.post("/", async (c) => {
-  const body = await parse(c, z.object({ title: z.string().min(1).max(200), description: z.string().max(2000).nullish(), totalKop: z.number().int().min(0).max(MAX_KOP) }));
+  const body = await parse(c, z.object({ title: z.string().min(1).max(200), description: z.string().max(20000).nullish(), totalKop: z.number().int().min(0).max(MAX_KOP) }));
   if (!body) return c.json({ error: { code: "bad_request", message: "Вкажіть назву і коректну вартість" } }, 400);
   const db = createDb(c.env.DB);
   const ins = await db
@@ -171,7 +171,7 @@ projectsRouter.get("/:id", async (c) => {
 });
 
 projectsRouter.patch("/:id", async (c) => {
-  const body = await parse(c, z.object({ title: z.string().min(1).max(200).optional(), description: z.string().max(2000).nullish(), totalKop: z.number().int().min(0).max(MAX_KOP).optional() }));
+  const body = await parse(c, z.object({ title: z.string().min(1).max(200).optional(), description: z.string().max(20000).nullish(), totalKop: z.number().int().min(0).max(MAX_KOP).optional() }));
   if (!body) return c.json({ error: { code: "bad_request", message: "Некоректні дані" } }, 400);
   const db = createDb(c.env.DB);
   const p = await getProject(db, Number(c.req.param("id")));
