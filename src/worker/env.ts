@@ -5,6 +5,7 @@ export interface Env {
   ASSETS: Fetcher;
   DB: D1Database;
   BACKUPS: R2Bucket;
+  FILES: R2Bucket;
   TOTP_ENC_KEY: string;
   APP_ENV: string;
 }

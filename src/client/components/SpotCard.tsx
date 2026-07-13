@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { apiGet, apiPost, apiPut, apiPatch, apiDelete, type ApiResult } from "../api";
 import { formatDate, formatKop } from "../format";
+import { Attachments } from "./Attachments";
 import type { SpotDetail, SpotOwnerView, PaymentStatus } from "../../shared/api";
 
 const PAY_LABEL: Record<PaymentStatus, string> = { unpaid: "Не сплачено", paid: "Сплачено", overpaid: "Переплата", underpaid: "Доплата" };
@@ -362,6 +363,7 @@ export function SpotCard({ number, onClose, onChanged }: Props) {
                             </span>
                           ) : null}
                         </div>
+                        {n.kind === "manual" ? <Attachments entityType="note" entityId={n.id} canEdit /> : null}
                       </>
                     )}
                   </li>

@@ -154,6 +154,18 @@ export const techArticles = sqliteTable("tech_articles", {
   updatedAt: text("updated_at").notNull().default(now),
 });
 
+export const attachments = sqliteTable("attachments", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  entityType: text("entity_type", { enum: ["article", "project", "note"] }).notNull(),
+  entityId: integer("entity_id").notNull(),
+  filename: text("filename").notNull(),
+  contentType: text("content_type").notNull().default("application/octet-stream"),
+  size: integer("size").notNull().default(0),
+  r2Key: text("r2_key").notNull().unique(),
+  uploadedBy: integer("uploaded_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: text("created_at").notNull().default(now),
+});
+
 export const auditLog = sqliteTable("audit_log", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   at: text("at").notNull().default(now),
@@ -174,4 +186,5 @@ export type Project = typeof projects.$inferSelect;
 export type ProjectSpot = typeof projectSpots.$inferSelect;
 export type Note = typeof notes.$inferSelect;
 export type TechArticle = typeof techArticles.$inferSelect;
+export type Attachment = typeof attachments.$inferSelect;
 export type AuditEntry = typeof auditLog.$inferSelect;

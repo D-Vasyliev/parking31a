@@ -10,6 +10,7 @@ import { searchRouter } from "./routes/search";
 import { usersRouter } from "./routes/users";
 import { auditRouter } from "./routes/audit";
 import { articlesRouter } from "./routes/articles";
+import { filesRouter } from "./routes/files";
 import { runBackup, cleanupExpired } from "./cron";
 import { createDb } from "./db";
 import { writeAudit } from "./lib/audit";
@@ -31,6 +32,7 @@ app.route("/api/search", searchRouter);
 app.route("/api/users", usersRouter);
 app.route("/api/audit", auditRouter);
 app.route("/api/articles", articlesRouter);
+app.route("/api/files", filesRouter);
 
 // Ручний запуск бекапу (адмін)
 app.post("/api/backup", requireAuth, requireAdmin, async (c) => {
@@ -62,9 +64,14 @@ function withSecurityHeaders(res: Response, url: URL): Response {
   h.set("Referrer-Policy", "same-origin");
   const isLocal = url.hostname === "localhost" || url.hostname === "127.0.0.1";
   if (!isLocal) {
+    // Вміст файлів (PDF/зображення) вбудовується в застосунок через <iframe>/<img>,
+    // тож дозволяємо framing тим самим origin і забороняємо активний вміст.
+    const isFileRaw = url.pathname.startsWith("/api/files/") && url.pathname.endsWith("/raw");
     h.set(
       "Content-Security-Policy",
-      "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'",
+      isFileRaw
+        ? "default-src 'none'; img-src 'self'; frame-ancestors 'self'; base-uri 'none'"
+        : "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'",
     );
     h.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   }

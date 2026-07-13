@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiGet, apiPost, apiPatch, apiDelete, apiPut, type ApiResult } from "../api";
 import { formatKop, formatDate, parseKop } from "../format";
 import { MapPicker } from "../components/MapPicker";
+import { Attachments } from "../components/Attachments";
+import { useAuth } from "../auth";
 import type { ProjectDetail as PD, ProjectParticipant, PaymentMethod } from "../../shared/api";
 
 const STATUS_LABEL = { draft: "Чернетка", active: "Активний", completed: "Завершений", archived: "Архів" } as const;
@@ -17,6 +19,8 @@ function payStatusText(p: ProjectParticipant): string {
 export function ProjectDetail() {
   const { id } = useParams();
   const nav = useNavigate();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [p, setP] = useState<PD | null>(null);
   const [state, setState] = useState<"loading" | "ok" | "notfound" | "error">("loading");
   const [err, setErr] = useState<string | null>(null);
@@ -236,6 +240,10 @@ export function ProjectDetail() {
             {p.participants.length === 0 ? <tr><td colSpan={6} className="empty">Місць ще не додано.</td></tr> : null}
           </tbody>
         </table>
+      </div>
+
+      <div className="card-sec">
+        <Attachments entityType="project" entityId={p.id} canEdit={isAdmin} />
       </div>
 
       {payRow != null ? (

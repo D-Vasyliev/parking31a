@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { apiGet, apiPost, apiPatch, apiDelete } from "../api";
 import { useAuth } from "../auth";
 import { formatDate } from "../format";
+import { Attachments } from "../components/Attachments";
 import type { ArticleView } from "../../shared/api";
 
 type EditState = null | { id: number | null; title: string; body: string };
@@ -100,6 +101,7 @@ export function TechInfo() {
                 ) : null}
               </div>
               {a.body ? <div className="article-body">{a.body}</div> : null}
+              <Attachments entityType="article" entityId={a.id} canEdit={isAdmin} />
               <div className="note-meta">
                 <span>
                   Оновлено {formatDate(a.updatedAt)}

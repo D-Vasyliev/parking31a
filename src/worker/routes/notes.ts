@@ -6,6 +6,7 @@ import { createDb } from "../db";
 import { notes } from "../db/schema";
 import { requireAuth } from "../middleware";
 import { writeAudit } from "../lib/audit";
+import { deleteAttachmentsFor } from "../lib/attachments";
 
 const nowIso = () => new Date().toISOString();
 const ip = (c: { req: { header: (n: string) => string | undefined } }) => c.req.header("CF-Connecting-IP") ?? null;
@@ -41,6 +42,7 @@ notesRouter.delete("/:id", async (c) => {
   if (!note) return c.json({ error: { code: "not_found", message: "Нотатку не знайдено" } }, 404);
   if (note.kind !== "manual") return c.json({ error: { code: "immutable", message: "Авто-нотатку не можна видалити" } }, 409);
   await db.delete(notes).where(and(eq(notes.id, id), eq(notes.kind, "manual")));
+  await deleteAttachmentsFor(c.env, db, "note", id);
   await writeAudit(db, { userId: c.get("user")!.id, action: "note.delete", entityType: "note", entityId: String(id), ip: ip(c) });
   return c.json({ ok: true });
 });

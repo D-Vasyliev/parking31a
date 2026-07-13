@@ -23,7 +23,8 @@
   ],
 
   "r2_buckets": [
-    { "binding": "BACKUPS", "bucket_name": "parking31a-backups" }
+    { "binding": "BACKUPS", "bucket_name": "parking31a-backups" },
+    { "binding": "FILES", "bucket_name": "parking31a-files" }
   ],
 
   // Кастомний домен (зона parking31a.com уже в акаунті). custom_domain=true

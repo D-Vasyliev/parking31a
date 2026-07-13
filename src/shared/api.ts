@@ -319,6 +319,18 @@ export interface ArticleSaveBody {
   body?: string | null;
 }
 
+// ─── Прикріплені файли ───
+export type AttachmentEntityType = "article" | "project" | "note";
+export const MAX_ATTACHMENT_BYTES = 100 * 1024 * 1024; // 100 МБ
+export interface AttachmentView {
+  id: number;
+  filename: string;
+  contentType: string;
+  size: number;
+  createdAt: string;
+  uploadedByEmail: string | null;
+}
+
 export interface ChangePasswordBody {
   currentPassword: string;
   newPassword: string;

@@ -6,6 +6,7 @@ import { createDb, type DB } from "../db";
 import { projects, projectSpots, spots, spotOwners, owners, notes } from "../db/schema";
 import { requireAuth } from "../middleware";
 import { auditIns, writeAudit } from "../lib/audit";
+import { deleteAttachmentsFor } from "../lib/attachments";
 import { recalcShares, paymentStatus } from "../../shared/shares";
 import type { Section } from "../../shared/spots";
 import type { ProjectListItem, ProjectDetail, ProjectParticipant, PaymentMethod } from "../../shared/api";
@@ -202,6 +203,7 @@ projectsRouter.delete("/:id", async (c) => {
     db.delete(projects).where(eq(projects.id, p.id)),
     auditIns(db, { userId: c.get("user")!.id, action: "project.delete", entityType: "project", entityId: String(p.id), ip: ip(c) }),
   ]);
+  await deleteAttachmentsFor(c.env, db, "project", p.id);
   return c.json({ ok: true });
 });
 

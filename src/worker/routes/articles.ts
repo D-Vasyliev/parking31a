@@ -6,6 +6,7 @@ import { createDb } from "../db";
 import { techArticles, users } from "../db/schema";
 import { requireAuth, requireAdmin } from "../middleware";
 import { writeAudit } from "../lib/audit";
+import { deleteAttachmentsFor } from "../lib/attachments";
 import type { ArticleView } from "../../shared/api";
 
 const iso = () => new Date().toISOString();
@@ -82,6 +83,7 @@ articlesRouter.delete("/:id", requireAdmin, async (c) => {
   const id = Number(c.req.param("id"));
   const r = await db.delete(techArticles).where(eq(techArticles.id, id)).returning({ id: techArticles.id });
   if (!r.length) return c.json({ error: { code: "not_found", message: "Статтю не знайдено" } }, 404);
+  await deleteAttachmentsFor(c.env, db, "article", id);
   await writeAudit(db, { userId: c.get("user")!.id, action: "article.delete", entityType: "article", entityId: String(id), payload: null, ip: ip(c) });
   return c.json({ ok: true });
 });
